@@ -3,6 +3,7 @@ package com.example.calculadora;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.RadioButton;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -12,7 +13,9 @@ public class MainActivity extends AppCompatActivity {
 
     EditText txtNum1, txtNum2;
     TextView lblRespuesta;
+    TextView tempVal;
     Button btn;
+    RadioButton opt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,20 +32,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void calcular() {
+        tempVal = findViewById(R.id.txtNum1);
+        Double num1 = Double.parseDouble(tempVal.getText().toString());
 
-        String n1 = txtNum1.getText().toString();
-        String n2 = txtNum2.getText().toString();
+        tempVal  = findViewById(R.id.txtNum2);
+        Double num2 = Double.parseDouble(tempVal.getText().toString());
 
-        if (n1.isEmpty() || n2.isEmpty()) {
-            lblRespuesta.setText("Respuesta: ingrese números");
-            return;
+        double respuesta = 0;
+
+        opt = findViewById(R.id.optSuma);
+        if (opt.isChecked()) {
+            respuesta = num1 + num2;
+
         }
 
-        double num1 = Double.parseDouble(n1);
-        double num2 = Double.parseDouble(n2);
+        opt = findViewById(R.id.optResta);
+        if (opt.isChecked()) {
+            respuesta = num1 - num2;
 
-        double respuesta = num1 + num2;
+        }
 
-        lblRespuesta.setText("Respuesta: " + respuesta);
+        opt = findViewById(R.id.optMultiplicar);
+        if (opt.isChecked()) {
+            respuesta = num1 * num2;
+
+        }
+
+        tempVal = findViewById(R.id.lblRespuesta);
+        tempVal.setText("Respuesta: "+ respuesta);
+
     }
 }
