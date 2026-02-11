@@ -5,6 +5,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -19,8 +20,7 @@ public class MainActivity extends AppCompatActivity {
     TextView tempVal;
     Button btn;
 
-    RadioGroup radioGroup;
-    RadioButton opt;
+    Spinner spn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,47 +45,23 @@ public class MainActivity extends AppCompatActivity {
 
         double respuesta = 0;
 
-        radioGroup = findViewById(R.id.optOpciones);
-
-        if(radioGroup.getCheckedRadioButtonId()==R.id.optSuma) {
-            respuesta = num1 + num2;
-        }
-        if(radioGroup.getCheckedRadioButtonId()==R.id.optResta) {
-            respuesta = num1 - num2;
-        }
-        if(radioGroup.getCheckedRadioButtonId()==R.id.optMultiplicar) {
-            respuesta = num1 * num2;
-        }
-        if(radioGroup.getCheckedRadioButtonId()==R.id.optDividir) {
-            respuesta = num1 / num2;
-        }
-        if(radioGroup.getCheckedRadioButtonId()==R.id.optFactorial) {
-            respuesta = 1;
-            for(int i = 1; i <= num1; i++) {
-                respuesta = respuesta * i;
-            }
-        }
-
-        if(radioGroup.getCheckedRadioButtonId()==R.id.optPorcentaje) {
-            respuesta = (num1 / 100) * num2;
-        }
-        if(radioGroup.getCheckedRadioButtonId()==R.id.optPotencia) {
-            respuesta = Math.pow(num1, num2);
-        }
-        if(radioGroup.getCheckedRadioButtonId()==R.id.optRaiz) {
-            respuesta = Math.sqrt(num1);
-        }
-
-        String respuestaTexto;
-
-        if (respuesta % 1 == 0) {
-            respuestaTexto = String.valueOf((int) respuesta);
-        } else {
-            respuestaTexto = String.format(Locale.US, "%.4f", respuesta);
-            respuestaTexto = respuestaTexto.replaceAll("0*$", "").replaceAll("\\.$", "");
+        spn = findViewById(R.id.cboOpciones);
+        switch (spn.getSelectedItemPosition()){
+            case 0: //suma
+                respuesta = num1 + num2;
+                break;
+            case 1: //Resta
+                respuesta = num1 - num2;
+                break;
+            case 2: //Multiplicacion
+                respuesta = num1 * num2;
+                break;
+            case 3: //division
+                respuesta = num1 / num2;
+                break;
         }
 
         tempVal = findViewById(R.id.lblRespuesta);
-        tempVal.setText("Respuesta: "+ respuestaTexto);
+        tempVal.setText("Respuesta: "+ respuesta);
     }
 }
