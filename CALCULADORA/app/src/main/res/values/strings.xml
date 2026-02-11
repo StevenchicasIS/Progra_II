@@ -1,4 +1,12 @@
 <resources>
     <string name="app_name">Calculadora Basica</string>
+    <string-array name="monedas">
+        <item>Dolar</item>
+        <item>Euro</item>
+        <item>Quetzal</item>
+        <item>Lempira</item>
+        <item>Cordobas</item>
+        <item>Colon CR</item>
+    </string-array>
 
 </resources>
