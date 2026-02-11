@@ -24,7 +24,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Escribe un numero"
-        android:layout_marginLeft="85dp"
+        android:layout_marginLeft="90dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.056"
@@ -37,7 +37,7 @@
         android:text="Num 2:"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.103"
+        app:layout_constraintHorizontal_bias="0.091"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/lblNum1"
         app:layout_constraintVertical_bias="0.063" />
@@ -46,7 +46,7 @@
         android:id="@+id/txtNum2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="85dp"
+        android:layout_marginLeft="90dp"
         android:layout_marginTop="15dp"
         android:hint="Escribe un numero"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -62,7 +62,7 @@
         android:text="Respuesta: ?"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.552"
+        app:layout_constraintHorizontal_bias="0.091"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/lblNum2"
         app:layout_constraintVertical_bias="0.114" />
@@ -74,7 +74,7 @@
         android:entries="@array/opciones"
         app:layout_constraintBottom_toTopOf="@+id/btnCalcular"
         app:layout_constraintTop_toBottomOf="@+id/txtNum2"
-        app:layout_constraintVertical_bias="0.659"
+        android:layout_marginLeft="35dp"
         tools:layout_editor_absoluteX="-4dp" />
 
     <Button
