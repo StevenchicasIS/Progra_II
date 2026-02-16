@@ -1,21 +1,10 @@
 <resources>
-    <string name="app_name">Calculadora Basica</string>
-    <string-array name="monedas">
-        <item>Dolar</item>
-        <item>Euro</item>
-        <item>Quetzal</item>
-        <item>Lempira</item>
-        <item>Cordobas</item>
-        <item>Colon CR</item>
-    </string-array>
-
-    <string-array name="longitud">
-        <item>Mts</item>
-        <item>Ml</item>
-        <item>Cm</item>
-        <item>Pulgada</item>
-        <item>Pies</item>
-        <item>Vara</item>
-        <item>Yarda</item>
+    <string name="app_name">Conversores</string>
+    <string-array name="tipo">
+        <item>Monedas</item>
+        <item>Longitud</item>
+        <item>Volumen</item>
+        <item>Masa</item>
+        <item>Almacenamiento</item>
     </string-array>
 </resources>
