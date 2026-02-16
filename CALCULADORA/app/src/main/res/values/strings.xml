@@ -9,4 +9,13 @@
         <item>Colon CR</item>
     </string-array>
 
+    <string-array name="longitud">
+        <item>Mts</item>
+        <item>Ml</item>
+        <item>Cm</item>
+        <item>Pulgada</item>
+        <item>Pies</item>
+        <item>Vara</item>
+        <item>Yarda</item>
+    </string-array>
 </resources>
