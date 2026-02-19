@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            // ✅ FÓRMULA CORRECTA
+
             double resultado = cantidad * valores[tipo][de] / valores[tipo][a];
 
             lblResultado.setText(
