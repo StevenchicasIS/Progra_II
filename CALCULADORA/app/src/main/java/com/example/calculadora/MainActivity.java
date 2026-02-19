@@ -1,83 +1,129 @@
 package com.example.calculadora;
 
 import android.os.Bundle;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.Spinner;
-import android.widget.TextView;
-
+import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView tempVal;
-    Spinner spn;
-    Button btn;
+    Spinner spnTipo, spnDe, spnA;
+    EditText txtCantidad;
+    TextView lblResultado;
+    Button btnConvertir;
+
+    DecimalFormat df;
+
+
     Double valores[][] = {
-            {1.0, 0.85, 7.67, 26.42, 36.80, 495.77}, //moendas
-            {1.0, 1000.0, 100.0, 39.3701, 3.280841666667, 1.1963081929167, 1.09361}, //longitud
-            {}, //volumen
+
+            //  MONEDAS
+            {1.0, 1.09, 1.13, 0.040, 0.027, 0.0020, 1.28},
+            // LONGITUD
+            {1.0, 0.001, 0.01, 0.0254, 0.3048, 0.9144, 1000.0},
+            // MASA
+            {1.0, 0.001, 1000.0,  0.453592, 0.0283495, 11.3398, 45.3592},
+            //  VOLUMEN
+            {1.0, 0.001, 1000.0, 3.78541, 4.54609, 0.236588, 0.0295735},
+            //ALMACENAMIENTO
+            {1.0, 1024.0, 1048576.0, 1073741824.0, 1099511627776.0, 1125899906842624.0, 0.125},
+            //  TIEMPO
+            {1.0, 60.0, 3600.0, 86400.0, 604800.0, 2629800.0, 31557600.0},
+            //TRANSFERENCIA DE DATOS
+            {1.0, 1000.0, 1000000.0, 1000000000.0, 1000000000000.0, 8.0, 8000000.0}
+
+
     };
-    String[][] etiquetas = {
-            {"Dolar", "Euro", "Quetzal", "Lempira", "Cordoba", "Colon CR"}, //monedas
-            {"Mts", "Ml", "Cm", "Pulgada", "Pies", "Vara", "Yarda"}, //Longitud
-            {""},  //volumen
+
+    String etiquetas[][] = {
+
+            {"USD", "Euro", "Quetzal", "Lempira", "Córdoba", "Colón CR", "Libra"},
+            {"Metro", "Milímetro", "Centímetro", "Pulgada", "Pie", "Yarda", "Kilómetro"},
+            {"Kilogramo", "Gramo", "Tonelada", "Libra", "Onza", "Arroba", "Quintal"},
+            {"Litro", "Mililitro", "Metro³", "Galón US", "Galón UK", "Taza", "Onza líquida"},
+            {"Byte", "Kilobyte", "Megabyte", "Gigabyte", "Terabyte", "Petabyte", "Bit"},
+            {"Segundo", "Minuto", "Hora", "Día", "Semana", "Mes", "Año"},
+            {"bps", "Kbps", "Mbps", "Gbps", "Tbps", "Bps", "MBps"}
+
+
     };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        btn = findViewById(R.id.btnConvertir);
-        btn.setOnClickListener(v->convertir());
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
+        df = new DecimalFormat("#,##0.######", symbols);
 
-        cambiarEtiqueta(0);//valores predeterminaods
+        spnTipo = findViewById(R.id.spnTipo);
+        spnDe = findViewById(R.id.spnDe);
+        spnA = findViewById(R.id.spnA);
+        txtCantidad = findViewById(R.id.txtCantidad);
+        lblResultado = findViewById(R.id.lblResultado);
+        btnConvertir = findViewById(R.id.btnConvertir);
 
-        spn = findViewById(R.id.spnTipo);
-        spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        cambiarOpciones(0);
+
+        spnTipo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                cambiarEtiqueta(i);
+            public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long id) {
+                cambiarOpciones(position);
             }
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
 
-            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
+
+        btnConvertir.setOnClickListener(v -> convertir());
     }
-    private void cambiarEtiqueta(int posicion){
-        ArrayAdapter<String> aaEtiquetas = new ArrayAdapter<>(
+
+    private void cambiarOpciones(int tipo) {
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_item,
-                etiquetas[posicion]
+                android.R.layout.simple_spinner_dropdown_item,
+                etiquetas[tipo]
         );
-        aaEtiquetas.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spn = findViewById(R.id.spnDe);
-        spn.setAdapter(aaEtiquetas);
-
-        spn = findViewById(R.id.spnA);
-        spn.setAdapter(aaEtiquetas);
+        spnDe.setAdapter(adapter);
+        spnA.setAdapter(adapter);
     }
-    private void convertir(){
-        spn = findViewById(R.id.spnTipo);
-        int tipo = spn.getSelectedItemPosition();
 
-        spn = findViewById(R.id.spnDe);
-        int de = spn.getSelectedItemPosition();
+    private void convertir() {
+        String input = txtCantidad.getText().toString().trim();
 
-        spn = findViewById(R.id.spnA);
-        int a = spn.getSelectedItemPosition();
+        if (input.isEmpty()) {
+            txtCantidad.setError("Ingrese un valor");
+            Toast.makeText(this, "Debe ingresar una cantidad", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        tempVal = findViewById(R.id.txtCantidad);
-        double cantidad = Double.parseDouble(tempVal.getText().toString());
-        double respuesta = conversor(tipo, de, a, cantidad);
+        try {
+            int tipo = spnTipo.getSelectedItemPosition();
+            int de = spnDe.getSelectedItemPosition();
+            int a = spnA.getSelectedItemPosition();
 
-        tempVal = findViewById(R.id.lblRespuesta);
-        tempVal.setText("Respuesta: "+ respuesta);
-    }
-    double conversor(int tipo, int de, int a, double cantidad){
-        return valores[tipo][a]/valores[tipo][de] * cantidad;
+            double cantidad = Double.parseDouble(input);
+
+            if (tipo >= valores.length ||
+                    de >= valores[tipo].length ||
+                    a >= valores[tipo].length) {
+                Toast.makeText(this, "Error interno en unidades", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // ✅ FÓRMULA CORRECTA
+            double resultado = cantidad * valores[tipo][de] / valores[tipo][a];
+
+            lblResultado.setText(
+                    df.format(cantidad) + " " + etiquetas[tipo][de] + " = " +
+                            df.format(resultado) + " " + etiquetas[tipo][a]
+            );
+
+        } catch (NumberFormatException e) {
+            txtCantidad.setError("Número inválido");
+            Toast.makeText(this, "Ingrese un número válido", Toast.LENGTH_SHORT).show();
+        }
     }
 }
