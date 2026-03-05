@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TabHost xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/tabhost"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TabWidget
+            android:id="@android:id/tabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <FrameLayout
+            android:id="@android:id/tabcontent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="15dp">
+
+            <!-- TAB AGUA -->
+
+            <!-- TAB AREA -->
+            <LinearLayout
+                android:id="@+id/tabAgua"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Metros Consumidos"
+                    android:textSize="18sp" />
+
+                <EditText
+                    android:id="@+id/txtMetros"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Ej: 25"
+                    android:inputType="number" />
+
+                <Button
+                    android:id="@+id/btnCalcularAgua"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="CALCULAR" />
+
+                <TextView
+                    android:id="@+id/lblRespuestaAgua"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total: $0"
+                    android:textSize="18sp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tabArea"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:text="Valor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <EditText
+                    android:id="@+id/txtValorArea"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Ej: 10"
+                    android:inputType="numberDecimal"/>
+
+                <TextView
+                    android:text="De:"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <Spinner
+                    android:id="@+id/cboDe"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:entries="@array/unidades_area"/>
+
+                <TextView
+                    android:text="A:"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <Spinner
+                    android:id="@+id/cboA"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:entries="@array/unidades_area"/>
+
+                <Button
+                    android:id="@+id/btnConvertirArea"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="CONVERTIR"/>
+
+                <TextView
+                    android:id="@+id/lblRespuestaArea"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Resultado: 0"
+                    android:textSize="18sp"/>
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+    </LinearLayout>
+</TabHost>
