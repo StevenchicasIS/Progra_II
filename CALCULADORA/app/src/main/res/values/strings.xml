@@ -1,15 +1,3 @@
 <resources>
-
-    <string name="app_name">Parcial I</string>
-
-    <string-array name="unidades_area">
-        <item>Pie cuadrado</item>
-        <item>Vara cuadrada</item>
-        <item>Yarda cuadrada</item>
-        <item>Metro cuadrado</item>
-        <item>Tarea</item>
-        <item>Manzana</item>
-        <item>Hectárea</item>
-    </string-array>
-
+    <string name="app_name">Calculadora</string>
 </resources>
