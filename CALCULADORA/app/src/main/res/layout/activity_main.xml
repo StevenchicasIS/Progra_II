@@ -6,7 +6,7 @@
     android:padding="16dp">
 
     <TextView
-        android:id="@+id/lblSensorProximidad"
+        android:id="@+id/lblSensorLuz"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Inicializando sensor..."
