@@ -41,11 +41,28 @@ public class AdaptadorProductos extends RecyclerView.Adapter<AdaptadorProductos.
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Producto producto = listaProductos.get(position);
 
+        // Mostrar código
         holder.txtCodigo.setText("📌 " + producto.getCodigo());
-        holder.txtDescripcion.setText(producto.getDescripcion());
+
+        // Mostrar DESCRIPCIÓN (nombre del producto) - IMPORTANTE
+        if (producto.getDescripcion() != null && !producto.getDescripcion().isEmpty()) {
+            holder.txtDescripcion.setText(producto.getDescripcion());
+        } else {
+            holder.txtDescripcion.setText("Sin nombre");
+        }
+
+        // Mostrar marca
+        if (producto.getMarca() != null && !producto.getMarca().isEmpty()) {
+            holder.txtMarca.setText("🏷️ " + producto.getMarca());
+            holder.txtMarca.setVisibility(View.VISIBLE);
+        } else {
+            holder.txtMarca.setVisibility(View.GONE);
+        }
+
+        // Mostrar precio
         holder.txtPrecio.setText("$" + String.format("%,.2f", producto.getPrecio()));
 
-        // Mostrar la PRIMERA foto como portada
+        // Mostrar la primera foto como portada
         List<byte[]> fotos = producto.getFotos();
         if (fotos != null && !fotos.isEmpty()) {
             UtilidadImagenes.cargarImagenRedondeada(holder.imgImagen, fotos.get(0));
@@ -70,13 +87,14 @@ public class AdaptadorProductos extends RecyclerView.Adapter<AdaptadorProductos.
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         CircleImageView imgImagen;
-        TextView txtCodigo, txtDescripcion, txtPrecio;
+        TextView txtCodigo, txtDescripcion, txtMarca, txtPrecio;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             imgImagen = itemView.findViewById(R.id.ivImagen);
             txtCodigo = itemView.findViewById(R.id.tvCodigo);
             txtDescripcion = itemView.findViewById(R.id.tvDescripcion);
+            txtMarca = itemView.findViewById(R.id.tvMarca);
             txtPrecio = itemView.findViewById(R.id.tvPrecio);
         }
     }

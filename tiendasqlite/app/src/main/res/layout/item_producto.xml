@@ -1,63 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="12dp"
     android:layout_margin="8dp"
-    android:background="@android:color/white"
-    android:elevation="4dp">
-
-    <de.hdodenhof.circleimageview.CircleImageView
-        android:id="@+id/ivImagen"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:src="@android:drawable/ic_menu_gallery"
-        app:civ_border_width="2dp"
-        app:civ_border_color="#FF6B6B"/>
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardUseCompatPadding="true"
+    android:foreground="?android:attr/selectableItemBackground">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginStart="12dp">
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="@drawable/bg_card_dark">
 
-        <TextView
-            android:id="@+id/tvCodigo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Código"
-            android:textSize="12sp"
-            android:textColor="#666666"/>
+        <!-- Imagen del producto -->
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/ivImagen"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:src="@android:drawable/ic_menu_gallery"
+            app:civ_border_width="3dp"
+            app:civ_border_color="#4CAF50"/>
 
-        <TextView
-            android:id="@+id/tvDescripcion"
-            android:layout_width="wrap_content"
+        <!-- Información -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Descripción"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#333333"
-            android:layout_marginTop="2dp"/>
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="14dp"
+            android:layout_gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/tvPrecio"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="$0"
-            android:textSize="14sp"
-            android:textColor="#4CAF50"
-            android:textStyle="bold"
-            android:layout_marginTop="4dp"/>
+            <!-- Código (gris claro) -->
+            <TextView
+                android:id="@+id/tvCodigo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="COD-001"
+                android:textSize="11sp"
+                android:textColor="#AAAAAA"
+                android:textStyle="bold"/>
+
+            <!-- NOMBRE DEL PRODUCTO EN BLANCO -->
+            <TextView
+                android:id="@+id/tvDescripcion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nombre del Producto"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:layout_marginTop="4dp"/>
+
+            <!-- Marca (gris claro) -->
+            <TextView
+                android:id="@+id/tvMarca"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Marca"
+                android:textSize="12sp"
+                android:textColor="#CCCCCC"
+                android:layout_marginTop="2dp"/>
+
+            <!-- Precio (verde) -->
+            <TextView
+                android:id="@+id/tvPrecio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="$0.00"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#4CAF50"
+                android:layout_marginTop="6dp"/>
+
+        </LinearLayout>
+
+        <!-- Icono de edición -->
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_edit"
+            android:layout_gravity="center_vertical"
+            android:alpha="0.6"
+            android:padding="6dp"
+            android:background="@drawable/bg_icon_circle_dark"/>
 
     </LinearLayout>
 
-    <ImageView
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:src="@android:drawable/ic_menu_edit"
-        android:layout_gravity="center"/>
-
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

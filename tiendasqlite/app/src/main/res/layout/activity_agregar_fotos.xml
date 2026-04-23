@@ -4,22 +4,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F5F5">
+    android:background="@drawable/bg_gradient_main">
 
+    <!-- Header -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:layout_marginBottom="8dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp">
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="20dp"
-            android:background="#2196F3">
+            android:background="@drawable/bg_header_info">
 
             <TextView
                 android:layout_width="match_parent"
@@ -33,23 +34,24 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Toca una foto para eliminarla"
+                android:text="Presiona una foto para eliminarla"
                 android:textSize="12sp"
                 android:gravity="center"
                 android:textColor="@android:color/white"
-                android:alpha="0.8"
+                android:alpha="0.85"
                 android:layout_marginTop="4dp"/>
 
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>
 
+    <!-- Info producto -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="16dp"
-        app:cardCornerRadius="12dp"
+        app:cardCornerRadius="16dp"
         app:cardElevation="2dp">
 
         <LinearLayout
@@ -63,7 +65,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="🏷️"
-                android:textSize="24sp"/>
+                android:textSize="28sp"/>
 
             <TextView
                 android:id="@+id/tvProductoInfo"
@@ -74,7 +76,7 @@
                 android:text="Producto"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black"/>
+                android:textColor="@color/text_primary"/>
 
             <TextView
                 android:id="@+id/tvCantidadFotos"
@@ -82,20 +84,24 @@
                 android:layout_height="wrap_content"
                 android:text="0 fotos"
                 android:textSize="12sp"
-                android:textColor="#666666"/>
+                android:background="@drawable/bg_badge"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:textColor="@android:color/white"/>
 
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>
 
+    <!-- Grid de fotos -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="16dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="2dp">
+        app:cardCornerRadius="20dp"
+        app:cardElevation="3dp">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvFotos"
@@ -106,6 +112,7 @@
 
     </androidx.cardview.widget.CardView>
 
+    <!-- Botones -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -114,29 +121,35 @@
         android:background="@android:color/white"
         android:elevation="8dp">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAgregarFoto"
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
-            android:text="📷 AGREGAR FOTO"
-            android:textColor="@android:color/black"
+            android:text="Agregar Foto"
+            android:textColor="@android:color/white"
             android:textStyle="bold"
             android:textSize="14sp"
-            android:backgroundTint="#2196F3"/>
+            android:backgroundTint="@color/info"
+            app:cornerRadius="16dp"
+            app:icon="@android:drawable/ic_menu_camera"
+            app:iconGravity="textStart"/>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnFinalizar"
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:text="✅ FINALIZAR"
-            android:textColor="@android:color/black"
+            android:text="✅ Finalizar"
+            android:textColor="@android:color/white"
             android:textStyle="bold"
             android:textSize="14sp"
-            android:backgroundTint="#4CAF50"/>
+            android:backgroundTint="@color/success"
+            app:cornerRadius="16dp"
+            app:icon="@android:drawable/ic_menu_save"
+            app:iconGravity="textStart"/>
 
     </LinearLayout>
 
