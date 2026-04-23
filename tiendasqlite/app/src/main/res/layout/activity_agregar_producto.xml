@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#F5F5F5">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="➕ NUEVO PRODUCTO"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="16dp"
+        android:background="#4CAF50"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Campo Código -->
+    <EditText
+        android:id="@+id/etCodigo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint=" Código del producto "
+        android:padding="14dp"
+        android:layout_marginBottom="12dp"
+        android:background="@android:drawable/editbox_background"
+        android:textColor="@android:color/black"
+        android:textColorHint="#999999"
+        android:textSize="14sp"/>
+
+    <!-- Campo Descripción -->
+    <EditText
+        android:id="@+id/etDescripcion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="📝 Nombre/Descripción del producto "
+        android:padding="14dp"
+        android:layout_marginBottom="12dp"
+        android:background="@android:drawable/editbox_background"
+        android:textColor="@android:color/black"
+        android:textColorHint="#999999"
+        android:textSize="14sp"/>
+
+    <!-- Campo Marca -->
+    <EditText
+        android:id="@+id/etMarca"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint=" Marca "
+        android:padding="14dp"
+        android:layout_marginBottom="12dp"
+        android:background="@android:drawable/editbox_background"
+        android:textColor="@android:color/black"
+        android:textColorHint="#999999"
+        android:textSize="14sp"/>
+
+    <!-- Campo Presentación -->
+    <EditText
+        android:id="@+id/etPresentacion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint=" Presentación "
+        android:padding="14dp"
+        android:layout_marginBottom="12dp"
+        android:background="@android:drawable/editbox_background"
+        android:textColor="@android:color/black"
+        android:textColorHint="#999999"
+        android:textSize="14sp"/>
+
+    <!-- Campo Precio -->
+    <EditText
+        android:id="@+id/etPrecio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Precio "
+        android:inputType="numberDecimal"
+        android:padding="14dp"
+        android:layout_marginBottom="16dp"
+        android:background="@android:drawable/editbox_background"
+        android:textColor="@android:color/black"
+        android:textColorHint="#999999"
+        android:textSize="14sp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnGuardar"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="GUARDAR"
+            android:textColor="@android:color/black"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:backgroundTint="#4CAF50"/>
+
+        <Button
+            android:id="@+id/btnCancelar"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text=" CANCELAR"
+            android:textColor="@android:color/black"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:backgroundTint="#F44336"/>
+    </LinearLayout>
+
+</LinearLayout>

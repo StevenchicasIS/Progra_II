@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Colores de la app -->
+    <color name="primary">#FF6B6B</color>
+    <color name="primary_dark">#EE5A5A</color>
+    <color name="accent">#4ECDC4</color>
+    <color name="background">#F8F9FA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F1F3F4</color>  <!-- ← ESTE FALTABA -->
+    <color name="text_primary">#202124</color>
+    <color name="text_secondary">#5F6368</color>
+    <color name="text_hint">#9AA0A6</color>
+    <color name="success">#34A853</color>
+    <color name="error">#EA4335</color>
+    <color name="info">#4285F4</color>
+</resources>
