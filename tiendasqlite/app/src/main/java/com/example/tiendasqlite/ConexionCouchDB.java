@@ -52,6 +52,8 @@ public class ConexionCouchDB {
         return "Basic " + new String(encoded);
     }
 
+    // ==================== GET - OBTENER PRODUCTOS ====================
+
     /**
      * AsyncTask para obtener todos los productos desde CouchDB
      */
@@ -72,7 +74,6 @@ public class ConexionCouchDB {
         protected String doInBackground(Void... params) {
             HttpURLConnection urlConnection = null;
             try {
-                // URL de la vista que creamos en CouchDB
                 String urlString = BASE_URL + DB_NAME + "/_design/productos/_view/todos-productos";
                 Log.d(TAG, "Conectando a: " + urlString);
 
@@ -81,23 +82,19 @@ public class ConexionCouchDB {
                 urlConnection.setRequestMethod("GET");
                 urlConnection.setConnectTimeout(15000);
                 urlConnection.setReadTimeout(15000);
-
-                // ==================== AGREGAR AUTENTICACIÓN ====================
                 urlConnection.setRequestProperty("Authorization", getAuthHeader());
-                // ===============================================================
 
                 int responseCode = urlConnection.getResponseCode();
-                Log.d(TAG, "Código de respuesta: " + responseCode);
+                Log.d(TAG, "Código de respuesta GET: " + responseCode);
 
                 if (responseCode == 401) {
-                    return "Error: Usuario o contraseña incorrectos. Verifica USER y PASSWORD en ConexionCouchDB.java";
+                    return "Error: Usuario o contraseña incorrectos";
                 }
 
                 if (responseCode != 200) {
                     return "Error: Código HTTP " + responseCode;
                 }
 
-                // Leer respuesta
                 InputStream in = new BufferedInputStream(urlConnection.getInputStream());
                 BufferedReader reader = new BufferedReader(new InputStreamReader(in));
                 StringBuilder result = new StringBuilder();
@@ -130,7 +127,6 @@ public class ConexionCouchDB {
                             JSONObject row = rows.getJSONObject(i);
                             JSONObject doc = row.getJSONObject("value");
 
-                            // Saltar documentos de diseño (no son productos)
                             if (!doc.has("_design") && doc.has("codigo")) {
                                 productos.put(doc);
                             }
@@ -141,6 +137,232 @@ public class ConexionCouchDB {
                         Log.e(TAG, "Error parseando JSON: ", e);
                         listener.onError("Error al parsear JSON: " + e.getMessage());
                     }
+                }
+            }
+        }
+    }
+
+    // ==================== POST - GUARDAR PRODUCTO NUEVO ====================
+
+    /**
+     * AsyncTask para GUARDAR un producto nuevo en CouchDB (POST/PUT)
+     */
+    public static class GuardarProductoTask extends AsyncTask<String, Void, String> {
+
+        private OnGuardarListener listener;
+
+        public interface OnGuardarListener {
+            void onSuccess(String id, String rev);
+            void onError(String error);
+        }
+
+        public GuardarProductoTask(OnGuardarListener listener) {
+            this.listener = listener;
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            String jsonData = params[0];
+            HttpURLConnection urlConnection = null;
+            try {
+                String id = "producto_" + System.currentTimeMillis();
+                String urlString = BASE_URL + DB_NAME + "/" + id;
+
+                URL url = new URL(urlString);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("PUT");
+                urlConnection.setRequestProperty("Content-Type", "application/json");
+                urlConnection.setRequestProperty("Authorization", getAuthHeader());
+                urlConnection.setDoOutput(true);
+                urlConnection.setConnectTimeout(15000);
+                urlConnection.setReadTimeout(15000);
+
+                java.io.OutputStream os = urlConnection.getOutputStream();
+                os.write(jsonData.getBytes());
+                os.flush();
+                os.close();
+
+                int responseCode = urlConnection.getResponseCode();
+                Log.d(TAG, "Código de respuesta POST: " + responseCode);
+
+                if (responseCode == 201 || responseCode == 202) {
+                    InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder result = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        result.append(line);
+                    }
+                    return result.toString();
+                } else {
+                    return "Error: Código HTTP " + responseCode;
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error POST: ", e);
+                return "Error: " + e.getMessage();
+            } finally {
+                if (urlConnection != null) urlConnection.disconnect();
+            }
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (listener != null) {
+                if (result != null && result.startsWith("Error")) {
+                    listener.onError(result);
+                } else {
+                    try {
+                        JSONObject response = new JSONObject(result);
+                        String id = response.getString("id");
+                        String rev = response.getString("rev");
+                        listener.onSuccess(id, rev);
+                    } catch (Exception e) {
+                        listener.onError("Error al parsear respuesta: " + e.getMessage());
+                    }
+                }
+            }
+        }
+    }
+
+    // ==================== PUT - ACTUALIZAR PRODUCTO ====================
+
+    /**
+     * AsyncTask para ACTUALIZAR un producto en CouchDB (PUT)
+     */
+    public static class ActualizarProductoTask extends AsyncTask<String, Void, String> {
+
+        private OnActualizarListener listener;
+
+        public interface OnActualizarListener {
+            void onSuccess(String rev);
+            void onError(String error);
+        }
+
+        public ActualizarProductoTask(OnActualizarListener listener) {
+            this.listener = listener;
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            String cloudId = params[0];
+            String cloudRev = params[1];
+            String jsonData = params[2];
+            HttpURLConnection urlConnection = null;
+            try {
+                String urlString = BASE_URL + DB_NAME + "/" + cloudId + "?rev=" + cloudRev;
+                Log.d(TAG, "PUT URL: " + urlString);
+
+                URL url = new URL(urlString);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("PUT");
+                urlConnection.setRequestProperty("Content-Type", "application/json");
+                urlConnection.setRequestProperty("Authorization", getAuthHeader());
+                urlConnection.setDoOutput(true);
+                urlConnection.setConnectTimeout(15000);
+                urlConnection.setReadTimeout(15000);
+
+                java.io.OutputStream os = urlConnection.getOutputStream();
+                os.write(jsonData.getBytes());
+                os.flush();
+                os.close();
+
+                int responseCode = urlConnection.getResponseCode();
+                Log.d(TAG, "Código de respuesta PUT: " + responseCode);
+
+                if (responseCode == 201 || responseCode == 202) {
+                    InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder result = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        result.append(line);
+                    }
+                    return result.toString();
+                } else {
+                    return "Error: Código HTTP " + responseCode;
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error PUT: ", e);
+                return "Error: " + e.getMessage();
+            } finally {
+                if (urlConnection != null) urlConnection.disconnect();
+            }
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (listener != null) {
+                if (result != null && result.startsWith("Error")) {
+                    listener.onError(result);
+                } else {
+                    try {
+                        JSONObject response = new JSONObject(result);
+                        String rev = response.getString("rev");
+                        listener.onSuccess(rev);
+                    } catch (Exception e) {
+                        listener.onError("Error al parsear respuesta: " + e.getMessage());
+                    }
+                }
+            }
+        }
+    }
+
+    // ==================== DELETE - ELIMINAR PRODUCTO ====================
+
+    /**
+     * AsyncTask para ELIMINAR un producto de CouchDB (DELETE)
+     */
+    public static class EliminarProductoCloudTask extends AsyncTask<String, Void, Boolean> {
+
+        private OnEliminarListener listener;
+
+        public interface OnEliminarListener {
+            void onSuccess();
+            void onError(String error);
+        }
+
+        public EliminarProductoCloudTask(OnEliminarListener listener) {
+            this.listener = listener;
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            String cloudId = params[0];
+            String cloudRev = params[1];
+            HttpURLConnection urlConnection = null;
+            try {
+                String urlString = BASE_URL + DB_NAME + "/" + cloudId + "?rev=" + cloudRev;
+                Log.d(TAG, "DELETE URL: " + urlString);
+
+                URL url = new URL(urlString);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("DELETE");
+                urlConnection.setRequestProperty("Authorization", getAuthHeader());
+                urlConnection.setConnectTimeout(15000);
+                urlConnection.setReadTimeout(15000);
+
+                int responseCode = urlConnection.getResponseCode();
+                Log.d(TAG, "Código de respuesta DELETE: " + responseCode);
+
+                return (responseCode == 200 || responseCode == 202);
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error DELETE: ", e);
+                return false;
+            } finally {
+                if (urlConnection != null) urlConnection.disconnect();
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Boolean success) {
+            if (listener != null) {
+                if (success) {
+                    listener.onSuccess();
+                } else {
+                    listener.onError("Error al eliminar de la nube");
                 }
             }
         }

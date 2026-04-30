@@ -24,6 +24,8 @@ public class ProductoDAO {
         values.put(BaseDatosHelper.CAMPO_MARCA, producto.getMarca());
         values.put(BaseDatosHelper.CAMPO_PRESENTACION, producto.getPresentacion());
         values.put(BaseDatosHelper.CAMPO_PRECIO, producto.getPrecio());
+        // Por defecto, el producto está pendiente de sincronizar
+        values.put(BaseDatosHelper.CAMPO_SINCRONIZADO, "pendiente");
 
         long id = db.insert(BaseDatosHelper.TABLA_PRODUCTOS, null, values);
         db.close();
@@ -47,6 +49,7 @@ public class ProductoDAO {
 
     public void eliminar(int id) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
+        // Las fotos se eliminan automáticamente por FOREIGN KEY
         db.delete(BaseDatosHelper.TABLA_PRODUCTOS, BaseDatosHelper.CAMPO_ID + "=?", new String[]{String.valueOf(id)});
         db.close();
     }
@@ -113,6 +116,111 @@ public class ProductoDAO {
         cursor.close();
         db.close();
         return producto;
+    }
+
+    // ========== MÉTODOS PARA SINCRONIZACIÓN ==========
+
+    /**
+     * Obtiene el cloud_id de un producto (ID en CouchDB)
+     */
+    public String getCloudId(int idLocal) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        String cloudId = null;
+        try {
+            cursor = db.query(BaseDatosHelper.TABLA_PRODUCTOS,
+                    new String[]{BaseDatosHelper.CAMPO_CLOUD_ID},
+                    BaseDatosHelper.CAMPO_ID + "=?",
+                    new String[]{String.valueOf(idLocal)},
+                    null, null, null);
+
+            if (cursor.moveToFirst()) {
+                cloudId = cursor.getString(0);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (cursor != null) cursor.close();
+            db.close();
+        }
+        return cloudId;
+    }
+
+    /**
+     * Obtiene el cloud_rev de un producto (revisión en CouchDB)
+     */
+    public String getCloudRev(int idLocal) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        String cloudRev = null;
+        try {
+            cursor = db.query(BaseDatosHelper.TABLA_PRODUCTOS,
+                    new String[]{BaseDatosHelper.CAMPO_CLOUD_REV},
+                    BaseDatosHelper.CAMPO_ID + "=?",
+                    new String[]{String.valueOf(idLocal)},
+                    null, null, null);
+
+            if (cursor.moveToFirst()) {
+                cloudRev = cursor.getString(0);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (cursor != null) cursor.close();
+            db.close();
+        }
+        return cloudRev;
+    }
+
+    /**
+     * Marca un producto como sincronizado
+     */
+    public void marcarComoSincronizado(int idLocal, String cloudId, String cloudRev) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(BaseDatosHelper.CAMPO_SINCRONIZADO, "sincronizado");
+        values.put(BaseDatosHelper.CAMPO_CLOUD_ID, cloudId);
+        values.put(BaseDatosHelper.CAMPO_CLOUD_REV, cloudRev);
+
+        db.update(BaseDatosHelper.TABLA_PRODUCTOS, values,
+                BaseDatosHelper.CAMPO_ID + "=?", new String[]{String.valueOf(idLocal)});
+        db.close();
+    }
+
+    /**
+     * Obtiene todos los productos pendientes de sincronizar
+     */
+    public List<Producto> obtenerProductosPendientes() {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(BaseDatosHelper.TABLA_PRODUCTOS, null,
+                BaseDatosHelper.CAMPO_SINCRONIZADO + "=? OR " +
+                        BaseDatosHelper.CAMPO_SINCRONIZADO + " IS NULL",
+                new String[]{"pendiente"}, null, null, null);
+
+        List<Producto> productos = new ArrayList<>();
+        while (cursor.moveToNext()) {
+            Producto p = cursorToProducto(cursor);
+            p.setFotos(obtenerFotos(p.getId()));
+            productos.add(p);
+        }
+        cursor.close();
+        db.close();
+        return productos;
+    }
+
+    /**
+     * Actualiza el cloud_id y cloud_rev de un producto
+     */
+    public void actualizarCloudInfo(int idLocal, String cloudId, String cloudRev) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(BaseDatosHelper.CAMPO_CLOUD_ID, cloudId);
+        values.put(BaseDatosHelper.CAMPO_CLOUD_REV, cloudRev);
+        values.put(BaseDatosHelper.CAMPO_SINCRONIZADO, "sincronizado");
+
+        db.update(BaseDatosHelper.TABLA_PRODUCTOS, values,
+                BaseDatosHelper.CAMPO_ID + "=?", new String[]{String.valueOf(idLocal)});
+        db.close();
     }
 
     // ========== FOTOS ==========

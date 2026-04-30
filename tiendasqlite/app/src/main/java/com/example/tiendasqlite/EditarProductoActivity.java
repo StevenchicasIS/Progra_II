@@ -14,6 +14,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import org.json.JSONObject;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,40 +159,79 @@ public class EditarProductoActivity extends AppCompatActivity {
             return;
         }
 
+        // Verificar código duplicado
         Producto existe = dao.buscarPorCodigo(codigo);
         if (existe != null && existe.getId() != productoId) {
             Toast.makeText(this, "Ya existe otro producto con ese código", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // Actualizar datos del producto
         productoActual.setCodigo(codigo);
         productoActual.setDescripcion(descripcion);
         productoActual.setMarca(etMarca.getText().toString().trim());
         productoActual.setPresentacion(etPresentacion.getText().toString().trim());
         productoActual.setPrecio(precio);
 
-        if (nuevaFotoPortada != null) {
-            List<byte[]> fotosActuales = productoActual.getFotos();
-            if (fotosActuales != null && !fotosActuales.isEmpty()) {
-                fotosActuales.set(0, nuevaFotoPortada);
-            } else {
-                fotosActuales = new ArrayList<>();
-                fotosActuales.add(nuevaFotoPortada);
-            }
-
-            dao.eliminarTodasLasFotos(productoId);
-            for (byte[] foto : fotosActuales) {
-                dao.guardarFotoProducto(productoId, foto);
-            }
-        }
-
+        // Guardar en SQLite
         int resultado = dao.actualizar(productoActual);
 
         if (resultado > 0) {
-            Toast.makeText(this, "✅ Producto actualizado", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "✅ Producto actualizado localmente", Toast.LENGTH_SHORT).show();
+
+            // Actualizar en CouchDB si tiene cloud_id y hay internet
+            if (ConexionCouchDB.hayInternet(this)) {
+                actualizarEnNube();
+            }
+
             finish();
         } else {
             Toast.makeText(this, "Error al actualizar", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void actualizarEnNube() {
+        String cloudId = dao.getCloudId(productoId);
+        String cloudRev = dao.getCloudRev(productoId);
+
+        if (cloudId == null || cloudId.isEmpty()) {
+            Toast.makeText(this, "⚠️ Producto no está en la nube", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            JSONObject json = new JSONObject();
+            json.put("_id", cloudId);
+            json.put("_rev", cloudRev);
+            json.put("codigo", productoActual.getCodigo());
+            json.put("descripcion", productoActual.getDescripcion());
+            json.put("marca", productoActual.getMarca());
+            json.put("presentacion", productoActual.getPresentacion());
+            json.put("precio", productoActual.getPrecio());
+            json.put("timestamp", System.currentTimeMillis());
+
+            Toast.makeText(this, "📤 Actualizando en la nube...", Toast.LENGTH_SHORT).show();
+
+            new ConexionCouchDB.ActualizarProductoTask(new ConexionCouchDB.ActualizarProductoTask.OnActualizarListener() {
+                @Override
+                public void onSuccess(String nuevaRev) {
+                    dao.marcarComoSincronizado(productoId, cloudId, nuevaRev);
+                    runOnUiThread(() ->
+                            Toast.makeText(EditarProductoActivity.this,
+                                    "✅ Producto actualizado en la nube", Toast.LENGTH_SHORT).show());
+                }
+
+                @Override
+                public void onError(String error) {
+                    runOnUiThread(() ->
+                            Toast.makeText(EditarProductoActivity.this,
+                                    "❌ Error en nube: " + error, Toast.LENGTH_LONG).show());
+                }
+            }).execute(cloudId, cloudRev, json.toString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 }

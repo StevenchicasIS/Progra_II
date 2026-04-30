@@ -29,6 +29,16 @@ public class AdaptadorProductos extends RecyclerView.Adapter<AdaptadorProductos.
         notifyDataSetChanged();
     }
 
+    // ==================== NUEVO MÉTODO ====================
+    // Obtener producto por posición (para el menú contextual)
+    public Producto getProductoAtPosition(int position) {
+        if (position >= 0 && position < listaProductos.size()) {
+            return listaProductos.get(position);
+        }
+        return null;
+    }
+    // =====================================================
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -40,6 +50,9 @@ public class AdaptadorProductos extends RecyclerView.Adapter<AdaptadorProductos.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Producto producto = listaProductos.get(position);
+
+        // Guardar posición en el tag del itemView
+        holder.itemView.setTag(position);
 
         // Mostrar código
         holder.txtCodigo.setText("📌 " + producto.getCodigo());

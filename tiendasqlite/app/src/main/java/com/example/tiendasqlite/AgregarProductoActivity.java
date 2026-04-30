@@ -6,6 +6,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import org.json.JSONObject;
 
 public class AgregarProductoActivity extends AppCompatActivity {
 
@@ -53,17 +54,64 @@ public class AgregarProductoActivity extends AppCompatActivity {
         String marca = campoMarca.getText().toString().trim();
         String presentacion = campoPresentacion.getText().toString().trim();
 
+        // 1. Guardar en SQLite (offline)
         Producto producto = new Producto(codigo, descripcion, marca, presentacion, precio);
-        long id = dao.insertar(producto);
+        long idLocal = dao.insertar(producto);
 
-        if (id > 0) {
-            Toast.makeText(this, "Producto guardado. Ahora agrega fotos", Toast.LENGTH_LONG).show();
+        if (idLocal > 0) {
+            Toast.makeText(this, "✅ Producto guardado localmente", Toast.LENGTH_SHORT).show();
+
+            // 2. Enviar a CouchDB (nube) si hay internet
+            if (ConexionCouchDB.hayInternet(this)) {
+                enviarANube(producto, (int) idLocal);
+            } else {
+                Toast.makeText(this, "⚠️ Sin internet. Se sincronizará después", Toast.LENGTH_LONG).show();
+            }
+
+            // Ir a agregar fotos
             Intent intent = new Intent(this, AgregarFotosActivity.class);
-            intent.putExtra("producto_id", (int) id);
+            intent.putExtra("producto_id", (int) idLocal);
             startActivity(intent);
             finish();
         } else {
             Toast.makeText(this, "Error o código duplicado", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void enviarANube(Producto producto, int idLocal) {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("codigo", producto.getCodigo());
+            json.put("descripcion", producto.getDescripcion());
+            json.put("marca", producto.getMarca() != null ? producto.getMarca() : "");
+            json.put("presentacion", producto.getPresentacion() != null ? producto.getPresentacion() : "");
+            json.put("precio", producto.getPrecio());
+            json.put("timestamp", System.currentTimeMillis());
+
+            Toast.makeText(this, "📤 Enviando a la nube...", Toast.LENGTH_SHORT).show();
+
+            new ConexionCouchDB.GuardarProductoTask(new ConexionCouchDB.GuardarProductoTask.OnGuardarListener() {
+                @Override
+                public void onSuccess(String cloudId, String cloudRev) {
+                    dao.marcarComoSincronizado(idLocal, cloudId, cloudRev);
+                    runOnUiThread(() ->
+                            Toast.makeText(AgregarProductoActivity.this,
+                                    "✅ Producto sincronizado con la nube\nID: " + cloudId,
+                                    Toast.LENGTH_LONG).show());
+                }
+
+                @Override
+                public void onError(String error) {
+                    runOnUiThread(() ->
+                            Toast.makeText(AgregarProductoActivity.this,
+                                    "❌ Error en nube: " + error,
+                                    Toast.LENGTH_LONG).show());
+                }
+            }).execute(json.toString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error al preparar datos: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 }
