@@ -4,33 +4,33 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F7FA">
+    android:background="@color/background">
 
-    <!-- Header -->
+    <!-- Header con gradiente moderno -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:layout_marginBottom="8dp"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="4dp">
+        app:cardCornerRadius="24dp"
+        app:cardElevation="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp"
-            android:background="@drawable/bg_header_gradient">
+            android:padding="28dp"
+            android:background="@drawable/bg_header_gradient_modern">
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🛍️ MI TIENDA"
-                android:textSize="26sp"
+                android:text="🛍️ Mi Tienda"
+                android:textSize="28sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:textColor="@android:color/white"
-                android:letterSpacing="0.05"/>
+                android:letterSpacing="0.02"/>
 
             <TextView
                 android:layout_width="match_parent"
@@ -40,7 +40,7 @@
                 android:gravity="center"
                 android:textColor="@android:color/white"
                 android:alpha="0.85"
-                android:layout_marginTop="6dp"/>
+                android:layout_marginTop="8dp"/>
 
         </LinearLayout>
 
@@ -52,7 +52,7 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="12dp"
-        app:cardCornerRadius="16dp"
+        app:cardCornerRadius="20dp"
         app:cardElevation="2dp">
 
         <LinearLayout
@@ -61,38 +61,49 @@
             android:orientation="horizontal"
             android:padding="8dp">
 
-            <EditText
-                android:id="@+id/etBuscar"
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="🔍 Buscar producto..."
-                android:padding="12dp"
-                android:background="@android:drawable/editbox_background"
-                android:textColor="@android:color/black"/>
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:startIconDrawable="@android:drawable/ic_search_category_default"
+                app:startIconTint="@color/primary"
+                app:boxStrokeColor="@color/primary"
+                app:hintTextColor="@color/primary">
 
-            <Button
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etBuscar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Buscar producto..."
+                    android:textColor="@color/text_primary"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnBuscar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="12dp"
                 android:text="Buscar"
                 android:textColor="@android:color/white"
-                android:backgroundTint="#4CAF50"/>
+                android:backgroundTint="@color/primary"
+                app:cornerRadius="12dp"
+                android:paddingHorizontal="20dp"/>
 
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Botones principales (AHORA CON 3 BOTONES) -->
+    <!-- Botones principales -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="20dp">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAgregar"
             android:layout_width="0dp"
             android:layout_height="56dp"
@@ -101,9 +112,12 @@
             android:text="➕ Agregar"
             android:textColor="@android:color/white"
             android:textStyle="bold"
-            android:backgroundTint="#4CAF50"/>
+            android:backgroundTint="@color/success"
+            app:cornerRadius="16dp"
+            app:icon="@android:drawable/ic_input_add"
+            app:iconGravity="textStart"/>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnVerTodos"
             android:layout_width="0dp"
             android:layout_height="56dp"
@@ -112,19 +126,24 @@
             android:text="📋 Ver Todos"
             android:textColor="@android:color/white"
             android:textStyle="bold"
-            android:backgroundTint="#2196F3"/>
+            android:backgroundTint="@color/info"
+            app:cornerRadius="16dp"
+            app:icon="@android:drawable/ic_menu_view"
+            app:iconGravity="textStart"/>
 
-        <!-- NUEVO BOTÓN WEBSERVICES -->
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnWebServices"
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:layout_weight="1"
             android:layout_marginStart="6dp"
-            android:text="🌐 WebServices"
+            android:text="🌐 Cloud"
             android:textColor="@android:color/white"
             android:textStyle="bold"
-            android:backgroundTint="#FF9800"/>
+            android:backgroundTint="@color/btn_sync"
+            app:cornerRadius="16dp"
+            app:icon="@android:drawable/ic_menu_upload"
+            app:iconGravity="textStart"/>
 
     </LinearLayout>
 
@@ -134,7 +153,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
-        android:layout_marginBottom="8dp">
+        android:layout_marginBottom="12dp">
 
         <TextView
             android:layout_width="0dp"
@@ -143,7 +162,7 @@
             android:text="📦 Mis Productos"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="#202124"/>
+            android:textColor="@color/text_primary"/>
 
         <TextView
             android:id="@+id/tvCantidad"
@@ -151,7 +170,10 @@
             android:layout_height="wrap_content"
             android:text="0 productos"
             android:textSize="12sp"
-            android:textColor="#9AA0A6"/>
+            android:background="@drawable/bg_badge_modern"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:textColor="@android:color/white"/>
 
     </LinearLayout>
 

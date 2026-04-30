@@ -8,31 +8,32 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Colores principales -->
-    <color name="primary">#4CAF50</color>
-    <color name="primary_dark">#2E7D32</color>
-    <color name="primary_light">#81C784</color>
-    <color name="accent">#FF6B6B</color>
-
-    <!-- Colores secundarios -->
-    <color name="info">#2196F3</color>
-    <color name="warning">#FF9800</color>
-    <color name="success">#4CAF50</color>
-    <color name="error">#EA4335</color>
+    <!-- Colores principales - Nueva paleta moderna -->
+    <color name="primary">#6366F1</color>        <!-- Indigo moderno -->
+    <color name="primary_dark">#4F46E5</color>  <!-- Indigo más oscuro -->
+    <color name="primary_light">#A5B4FC</color> <!-- Indigo claro -->
+    <color name="accent">#06B6D4</color>         <!-- Cyan moderno -->
 
     <!-- Colores de fondo -->
-    <color name="background">#F8F9FA</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#F1F3F4</color>
+    <color name="background">#F8FAFC</color>     <!-- Gris muy claro -->
+    <color name="surface">#FFFFFF</color>        <!-- Blanco -->
+    <color name="surface_variant">#F1F5F9</color>
 
     <!-- Colores de texto -->
-    <color name="text_primary">#202124</color>
-    <color name="text_secondary">#5F6368</color>
-    <color name="text_hint">#9AA0A6</color>
+    <color name="text_primary">#0F172A</color>   <!-- Azul oscuro -->
+    <color name="text_secondary">#475569</color> <!-- Gris azulado -->
+    <color name="text_hint">#94A3B8</color>
 
-    <!-- Colores de botones -->
-    <color name="btn_add">#4CAF50</color>
-    <color name="btn_edit">#4285F4</color>
-    <color name="btn_delete">#EA4335</color>
-    <color name="btn_cancel">#5F6368</color>
+    <!-- Colores de estado -->
+    <color name="success">#10B981</color>        <!-- Verde esmeralda -->
+    <color name="warning">#F59E0B</color>        <!-- Ámbar -->
+    <color name="error">#EF4444</color>          <!-- Rojo -->
+    <color name="info">#3B82F6</color>           <!-- Azul -->
+
+    <!-- Colores para botones -->
+    <color name="btn_add">#10B981</color>
+    <color name="btn_edit">#3B82F6</color>
+    <color name="btn_delete">#EF4444</color>
+    <color name="btn_cancel">#64748B</color>
+    <color name="btn_sync">#8B5CF6</color>       <!-- Violeta -->
 </resources>

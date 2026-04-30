@@ -1,14 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.TiendaSQLite" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Color primario -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryVariant">@color/primary_dark</item>
         <item name="colorOnPrimary">@android:color/white</item>
+
+        <!-- Color secundario -->
         <item name="colorSecondary">@color/accent</item>
         <item name="colorSecondaryVariant">@color/accent</item>
         <item name="colorOnSecondary">@android:color/white</item>
+
+        <!-- Barra de estado -->
         <item name="android:statusBarColor">@color/primary_dark</item>
         <item name="android:windowLightStatusBar">false</item>
+
+        <!-- Fondo -->
         <item name="android:windowBackground">@color/background</item>
+
+        <!-- Animaciones -->
+        <item name="android:windowAnimationStyle">@style/Animation.App</item>
+    </style>
+
+    <style name="Animation.App" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/slide_in_right</item>
+        <item name="android:activityCloseExitAnimation">@anim/slide_out_left</item>
     </style>
 </resources>
