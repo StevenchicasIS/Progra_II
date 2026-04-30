@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class BaseDatosHelper extends SQLiteOpenHelper {
 
     private static final String NOMBRE_BD = "tienda.db";
-    private static final int VERSION_BD = 3; // Incrementado a 3 para la actualización
+    private static final int VERSION_BD = 4; // Incrementar a 4
 
     // Tabla productos
     public static final String TABLA_PRODUCTOS = "productos";
@@ -18,7 +18,12 @@ public class BaseDatosHelper extends SQLiteOpenHelper {
     public static final String CAMPO_PRESENTACION = "presentacion";
     public static final String CAMPO_PRECIO = "precio";
 
-    // NUEVAS COLUMNAS PARA SINCRONIZACIÓN CON COUCHDB
+    // NUEVOS CAMPOS
+    public static final String CAMPO_COSTO = "costo";
+    public static final String CAMPO_GANANCIA = "ganancia";      // Porcentaje de ganancia
+    public static final String CAMPO_STOCK = "stock";
+
+    // Campos para sincronización
     public static final String CAMPO_SINCRONIZADO = "sincronizado";
     public static final String CAMPO_CLOUD_ID = "cloud_id";
     public static final String CAMPO_CLOUD_REV = "cloud_rev";
@@ -35,7 +40,6 @@ public class BaseDatosHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Tabla de productos con nuevas columnas
         String crearTablaProductos = "CREATE TABLE " + TABLA_PRODUCTOS + " (" +
                 CAMPO_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 CAMPO_CODIGO + " TEXT UNIQUE, " +
@@ -43,12 +47,14 @@ public class BaseDatosHelper extends SQLiteOpenHelper {
                 CAMPO_MARCA + " TEXT, " +
                 CAMPO_PRESENTACION + " TEXT, " +
                 CAMPO_PRECIO + " REAL, " +
+                CAMPO_COSTO + " REAL DEFAULT 0, " +
+                CAMPO_GANANCIA + " REAL DEFAULT 0, " +
+                CAMPO_STOCK + " INTEGER DEFAULT 0, " +
                 CAMPO_SINCRONIZADO + " TEXT DEFAULT 'pendiente', " +
                 CAMPO_CLOUD_ID + " TEXT, " +
                 CAMPO_CLOUD_REV + " TEXT)";
         db.execSQL(crearTablaProductos);
 
-        // Tabla de fotos
         String crearTablaFotos = "CREATE TABLE " + TABLA_FOTOS + " (" +
                 CAMPO_FOTO_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 CAMPO_PRODUCTO_ID + " INTEGER, " +
@@ -60,20 +66,14 @@ public class BaseDatosHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion < 3) {
-            // Agregar nuevas columnas para sincronización
+        if (oldVersion < 4) {
             try {
-                db.execSQL("ALTER TABLE " + TABLA_PRODUCTOS + " ADD COLUMN " + CAMPO_SINCRONIZADO + " TEXT DEFAULT 'pendiente'");
-                db.execSQL("ALTER TABLE " + TABLA_PRODUCTOS + " ADD COLUMN " + CAMPO_CLOUD_ID + " TEXT");
-                db.execSQL("ALTER TABLE " + TABLA_PRODUCTOS + " ADD COLUMN " + CAMPO_CLOUD_REV + " TEXT");
+                db.execSQL("ALTER TABLE " + TABLA_PRODUCTOS + " ADD COLUMN " + CAMPO_COSTO + " REAL DEFAULT 0");
+                db.execSQL("ALTER TABLE " + TABLA_PRODUCTOS + " ADD COLUMN " + CAMPO_GANANCIA + " REAL DEFAULT 0");
+                db.execSQL("ALTER TABLE " + TABLA_PRODUCTOS + " ADD COLUMN " + CAMPO_STOCK + " INTEGER DEFAULT 0");
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else {
-            // Si es una versión anterior, recrear tablas
-            db.execSQL("DROP TABLE IF EXISTS " + TABLA_FOTOS);
-            db.execSQL("DROP TABLE IF EXISTS " + TABLA_PRODUCTOS);
-            onCreate(db);
         }
     }
 }

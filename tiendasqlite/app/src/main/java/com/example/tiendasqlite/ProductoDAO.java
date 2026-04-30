@@ -24,7 +24,9 @@ public class ProductoDAO {
         values.put(BaseDatosHelper.CAMPO_MARCA, producto.getMarca());
         values.put(BaseDatosHelper.CAMPO_PRESENTACION, producto.getPresentacion());
         values.put(BaseDatosHelper.CAMPO_PRECIO, producto.getPrecio());
-        // Por defecto, el producto está pendiente de sincronizar
+        values.put(BaseDatosHelper.CAMPO_COSTO, producto.getCosto());
+        values.put(BaseDatosHelper.CAMPO_GANANCIA, producto.getGanancia());
+        values.put(BaseDatosHelper.CAMPO_STOCK, producto.getStock());
         values.put(BaseDatosHelper.CAMPO_SINCRONIZADO, "pendiente");
 
         long id = db.insert(BaseDatosHelper.TABLA_PRODUCTOS, null, values);
@@ -40,12 +42,16 @@ public class ProductoDAO {
         values.put(BaseDatosHelper.CAMPO_MARCA, producto.getMarca());
         values.put(BaseDatosHelper.CAMPO_PRESENTACION, producto.getPresentacion());
         values.put(BaseDatosHelper.CAMPO_PRECIO, producto.getPrecio());
+        values.put(BaseDatosHelper.CAMPO_COSTO, producto.getCosto());
+        values.put(BaseDatosHelper.CAMPO_GANANCIA, producto.getGanancia());
+        values.put(BaseDatosHelper.CAMPO_STOCK, producto.getStock());
 
         int result = db.update(BaseDatosHelper.TABLA_PRODUCTOS, values,
                 BaseDatosHelper.CAMPO_ID + "=?", new String[]{String.valueOf(producto.getId())});
         db.close();
         return result;
     }
+
 
     public void eliminar(int id) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -146,9 +152,7 @@ public class ProductoDAO {
         return cloudId;
     }
 
-    /**
-     * Obtiene el cloud_rev de un producto (revisión en CouchDB)
-     */
+
     public String getCloudRev(int idLocal) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = null;
@@ -172,9 +176,7 @@ public class ProductoDAO {
         return cloudRev;
     }
 
-    /**
-     * Marca un producto como sincronizado
-     */
+
     public void marcarComoSincronizado(int idLocal, String cloudId, String cloudRev) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -187,9 +189,7 @@ public class ProductoDAO {
         db.close();
     }
 
-    /**
-     * Obtiene todos los productos pendientes de sincronizar
-     */
+
     public List<Producto> obtenerProductosPendientes() {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = db.query(BaseDatosHelper.TABLA_PRODUCTOS, null,
@@ -208,9 +208,7 @@ public class ProductoDAO {
         return productos;
     }
 
-    /**
-     * Actualiza el cloud_id y cloud_rev de un producto
-     */
+
     public void actualizarCloudInfo(int idLocal, String cloudId, String cloudRev) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -223,7 +221,6 @@ public class ProductoDAO {
         db.close();
     }
 
-    // ========== FOTOS ==========
 
     public void guardarFotoProducto(int productoId, byte[] imagen) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -298,6 +295,24 @@ public class ProductoDAO {
         p.setMarca(cursor.getString(cursor.getColumnIndexOrThrow(BaseDatosHelper.CAMPO_MARCA)));
         p.setPresentacion(cursor.getString(cursor.getColumnIndexOrThrow(BaseDatosHelper.CAMPO_PRESENTACION)));
         p.setPrecio(cursor.getDouble(cursor.getColumnIndexOrThrow(BaseDatosHelper.CAMPO_PRECIO)));
+
+        // Nuevos campos
+        try {
+            p.setCosto(cursor.getDouble(cursor.getColumnIndexOrThrow(BaseDatosHelper.CAMPO_COSTO)));
+        } catch (Exception e) {
+            p.setCosto(0);
+        }
+        try {
+            p.setGanancia(cursor.getDouble(cursor.getColumnIndexOrThrow(BaseDatosHelper.CAMPO_GANANCIA)));
+        } catch (Exception e) {
+            p.setGanancia(0);
+        }
+        try {
+            p.setStock(cursor.getInt(cursor.getColumnIndexOrThrow(BaseDatosHelper.CAMPO_STOCK)));
+        } catch (Exception e) {
+            p.setStock(0);
+        }
+
         return p;
     }
 }

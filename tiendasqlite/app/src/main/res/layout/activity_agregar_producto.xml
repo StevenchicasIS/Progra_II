@@ -138,7 +138,7 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="16dp"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             app:startIconDrawable="@android:drawable/ic_menu_sort_by_size"
             app:startIconTint="@color/primary"
@@ -150,8 +150,53 @@
                 android:id="@+id/etPrecio"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Precio"
+                android:hint="Precio de venta"
                 android:inputType="numberDecimal"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Campo Costo -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:startIconDrawable="@android:drawable/ic_menu_manage"
+            app:startIconTint="@color/primary"
+            app:boxStrokeColor="@color/primary"
+            app:hintTextColor="@color/primary"
+            app:prefixText="$">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCosto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Costo del producto"
+                android:inputType="numberDecimal"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Campo Stock -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:startIconDrawable="@android:drawable/ic_menu_save"
+            app:startIconTint="@color/primary"
+            app:boxStrokeColor="@color/primary"
+            app:hintTextColor="@color/primary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etStock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Stock (cantidad en inventario)"
+                android:inputType="number"
                 android:textColor="@color/text_primary"
                 android:textSize="15sp"/>
 

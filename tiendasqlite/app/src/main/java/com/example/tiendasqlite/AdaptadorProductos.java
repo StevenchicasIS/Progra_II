@@ -10,14 +10,16 @@ import java.util.ArrayList;
 import java.util.List;
 import de.hdodenhof.circleimageview.CircleImageView;
 
+
 public class AdaptadorProductos extends RecyclerView.Adapter<AdaptadorProductos.ViewHolder> {
 
     private List<Producto> listaProductos = new ArrayList<>();
     private OnItemClickListener listener;
 
+
     public interface OnItemClickListener {
-        void alHacerClick(Producto producto);
-        void alMantenerClick(Producto producto);
+        void alHacerClick(Producto producto);      //  Modificación
+        void alMantenerClick(Producto producto);  //  Eliminación
     }
 
     public void setOnItemClickListener(OnItemClickListener listener) {
@@ -29,15 +31,12 @@ public class AdaptadorProductos extends RecyclerView.Adapter<AdaptadorProductos.
         notifyDataSetChanged();
     }
 
-    // ==================== NUEVO MÉTODO ====================
-    // Obtener producto por posición (para el menú contextual)
     public Producto getProductoAtPosition(int position) {
         if (position >= 0 && position < listaProductos.size()) {
             return listaProductos.get(position);
         }
         return null;
     }
-    // =====================================================
 
     @NonNull
     @Override
@@ -51,20 +50,15 @@ public class AdaptadorProductos extends RecyclerView.Adapter<AdaptadorProductos.
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Producto producto = listaProductos.get(position);
 
-        // Guardar posición en el tag del itemView
         holder.itemView.setTag(position);
-
-        // Mostrar código
         holder.txtCodigo.setText("📌 " + producto.getCodigo());
 
-        // Mostrar DESCRIPCIÓN (nombre del producto) - IMPORTANTE
         if (producto.getDescripcion() != null && !producto.getDescripcion().isEmpty()) {
             holder.txtDescripcion.setText(producto.getDescripcion());
         } else {
             holder.txtDescripcion.setText("Sin nombre");
         }
 
-        // Mostrar marca
         if (producto.getMarca() != null && !producto.getMarca().isEmpty()) {
             holder.txtMarca.setText("🏷️ " + producto.getMarca());
             holder.txtMarca.setVisibility(View.VISIBLE);
@@ -72,10 +66,15 @@ public class AdaptadorProductos extends RecyclerView.Adapter<AdaptadorProductos.
             holder.txtMarca.setVisibility(View.GONE);
         }
 
-        // Mostrar precio
+
         holder.txtPrecio.setText("$" + String.format("%,.2f", producto.getPrecio()));
 
-        // Mostrar la primera foto como portada
+        holder.txtStock.setText("📦 Stock: " + producto.getStock());
+
+
+        holder.txtGanancia.setText("📈 Ganancia: " + String.format("%.1f", producto.getGanancia()) + "%");
+
+
         List<byte[]> fotos = producto.getFotos();
         if (fotos != null && !fotos.isEmpty()) {
             UtilidadImagenes.cargarImagenRedondeada(holder.imgImagen, fotos.get(0));
@@ -83,9 +82,11 @@ public class AdaptadorProductos extends RecyclerView.Adapter<AdaptadorProductos.
             holder.imgImagen.setImageResource(android.R.drawable.ic_menu_gallery);
         }
 
+
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.alHacerClick(producto);
         });
+
 
         holder.itemView.setOnLongClickListener(v -> {
             if (listener != null) listener.alMantenerClick(producto);
@@ -98,9 +99,10 @@ public class AdaptadorProductos extends RecyclerView.Adapter<AdaptadorProductos.
         return listaProductos.size();
     }
 
+
     static class ViewHolder extends RecyclerView.ViewHolder {
         CircleImageView imgImagen;
-        TextView txtCodigo, txtDescripcion, txtMarca, txtPrecio;
+        TextView txtCodigo, txtDescripcion, txtMarca, txtPrecio, txtStock, txtGanancia;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -109,6 +111,8 @@ public class AdaptadorProductos extends RecyclerView.Adapter<AdaptadorProductos.
             txtDescripcion = itemView.findViewById(R.id.tvDescripcion);
             txtMarca = itemView.findViewById(R.id.tvMarca);
             txtPrecio = itemView.findViewById(R.id.tvPrecio);
+            txtStock = itemView.findViewById(R.id.tvStock);      // ✅ Campo stock
+            txtGanancia = itemView.findViewById(R.id.tvGanancia); // ✅ Campo ganancia
         }
     }
 }

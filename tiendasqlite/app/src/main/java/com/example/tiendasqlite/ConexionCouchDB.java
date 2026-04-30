@@ -19,23 +19,21 @@ public class ConexionCouchDB {
 
     private static final String TAG = "CouchDB";
 
-    // ==================== PARA EMULADOR ====================
-    // 10.0.2.2 es la IP del localhost de TU COMPUTADORA
+
     private static final String BASE_URL = "http://10.0.2.2:5984/";
     // =======================================================
 
-    private static final String DB_NAME = "tienda_db";
+    private static final String DB_NAME = "josue";
+    private static final String VIEW_NAME = "jimmy";;
 
-    // ==================== AUTENTICACIÓN ====================
+
     // Usuario y contraseña por defecto de CouchDB
-    // Si cambiaste la contraseña, modifícala aquí
+    // Si se cambia  la contraseña, hay que modificarla  aquí
     private static final String USER = "josue";
     private static final String PASSWORD = "IdJosue2004";
     // =======================================================
 
-    /**
-     * Verificar si hay conexión a internet
-     */
+
     public static boolean hayInternet(Context context) {
         ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm == null) return false;
@@ -43,20 +41,14 @@ public class ConexionCouchDB {
         return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
     }
 
-    /**
-     * Obtener el header de autenticación Basic
-     */
+
     private static String getAuthHeader() {
         String credentials = USER + ":" + PASSWORD;
         byte[] encoded = Base64.encode(credentials.getBytes(), Base64.NO_WRAP);
         return "Basic " + new String(encoded);
     }
 
-    // ==================== GET - OBTENER PRODUCTOS ====================
 
-    /**
-     * AsyncTask para obtener todos los productos desde CouchDB
-     */
     public static class ObtenerProductosTask extends AsyncTask<Void, Void, String> {
 
         private OnProductosListener listener;
@@ -74,7 +66,7 @@ public class ConexionCouchDB {
         protected String doInBackground(Void... params) {
             HttpURLConnection urlConnection = null;
             try {
-                String urlString = BASE_URL + DB_NAME + "/_design/productos/_view/todos-productos";
+                String urlString = BASE_URL + DB_NAME + "/_design/productos/_view/jimmy";
                 Log.d(TAG, "Conectando a: " + urlString);
 
                 URL url = new URL(urlString);
@@ -142,11 +134,7 @@ public class ConexionCouchDB {
         }
     }
 
-    // ==================== POST - GUARDAR PRODUCTO NUEVO ====================
 
-    /**
-     * AsyncTask para GUARDAR un producto nuevo en CouchDB (POST/PUT)
-     */
     public static class GuardarProductoTask extends AsyncTask<String, Void, String> {
 
         private OnGuardarListener listener;
@@ -165,7 +153,8 @@ public class ConexionCouchDB {
             String jsonData = params[0];
             HttpURLConnection urlConnection = null;
             try {
-                String id = "producto_" + System.currentTimeMillis();
+                // Generar ID único usando timestamp
+                String id = "prod_" + System.currentTimeMillis();
                 String urlString = BASE_URL + DB_NAME + "/" + id;
 
                 URL url = new URL(urlString);
@@ -205,7 +194,6 @@ public class ConexionCouchDB {
                 if (urlConnection != null) urlConnection.disconnect();
             }
         }
-
         @Override
         protected void onPostExecute(String result) {
             if (listener != null) {

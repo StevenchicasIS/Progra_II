@@ -106,7 +106,6 @@ public class MainActivity extends AppCompatActivity {
         cargarProductos();
     }
 
-    // ==================== MENÚ CONTEXTUAL ====================
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
@@ -119,7 +118,6 @@ public class MainActivity extends AppCompatActivity {
             menu.add(0, 4, 0, "🌐 Sincronizar con nube");
         }
     }
-
     @Override
     public boolean onContextItemSelected(@NonNull MenuItem item) {
         if (productoSeleccionado == null) {
@@ -164,10 +162,9 @@ public class MainActivity extends AppCompatActivity {
                     String cloudId = dao.getCloudId(producto.getId());
                     String cloudRev = dao.getCloudRev(producto.getId());
 
-                    // Eliminar localmente
                     dao.eliminar(producto.getId());
 
-                    // Eliminar en la nube si tiene cloud_id y hay internet
+
                     if (cloudId != null && !cloudId.isEmpty() && ConexionCouchDB.hayInternet(MainActivity.this)) {
                         eliminarEnNube(cloudId, cloudRev);
                     }
@@ -219,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // ==================== CONSULTAR WEBSERVICES (GET) ====================
+
     private void consultarWebServices() {
         if (!ConexionCouchDB.hayInternet(this)) {
             Toast.makeText(this, "⚠️ Sin conexión a internet", Toast.LENGTH_LONG).show();
@@ -296,7 +293,6 @@ public class MainActivity extends AppCompatActivity {
         }).execute(cloudId, cloudRev);
     }
 
-    // ==================== SINCRONIZAR PRODUCTOS PENDIENTES ====================
     private void sincronizarPendientes() {
         if (!ConexionCouchDB.hayInternet(this)) {
             Toast.makeText(this, "⚠️ Sin conexión a internet", Toast.LENGTH_SHORT).show();

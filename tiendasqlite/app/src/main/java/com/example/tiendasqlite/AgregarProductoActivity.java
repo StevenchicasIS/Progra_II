@@ -10,7 +10,7 @@ import org.json.JSONObject;
 
 public class AgregarProductoActivity extends AppCompatActivity {
 
-    private EditText campoCodigo, campoDescripcion, campoMarca, campoPresentacion, campoPrecio;
+    private EditText campoCodigo, campoDescripcion, campoMarca, campoPresentacion, campoPrecio, campoCosto, campoStock;
     private Button botonGuardar, botonCancelar;
     private ProductoDAO dao;
 
@@ -26,6 +26,8 @@ public class AgregarProductoActivity extends AppCompatActivity {
         campoMarca = findViewById(R.id.etMarca);
         campoPresentacion = findViewById(R.id.etPresentacion);
         campoPrecio = findViewById(R.id.etPrecio);
+        campoCosto = findViewById(R.id.etCosto);
+        campoStock = findViewById(R.id.etStock);
         botonGuardar = findViewById(R.id.btnGuardar);
         botonCancelar = findViewById(R.id.btnCancelar);
 
@@ -37,6 +39,8 @@ public class AgregarProductoActivity extends AppCompatActivity {
         String codigo = campoCodigo.getText().toString().trim();
         String descripcion = campoDescripcion.getText().toString().trim();
         String precioStr = campoPrecio.getText().toString().trim();
+        String costoStr = campoCosto.getText().toString().trim();
+        String stockStr = campoStock.getText().toString().trim();
 
         if (codigo.isEmpty() || descripcion.isEmpty() || precioStr.isEmpty()) {
             Toast.makeText(this, "Completa código, descripción y precio", Toast.LENGTH_SHORT).show();
@@ -44,6 +48,9 @@ public class AgregarProductoActivity extends AppCompatActivity {
         }
 
         double precio;
+        double costo = 0;
+        int stock = 0;
+
         try {
             precio = Double.parseDouble(precioStr);
         } catch (NumberFormatException e) {
@@ -51,24 +58,38 @@ public class AgregarProductoActivity extends AppCompatActivity {
             return;
         }
 
+        try {
+            costo = Double.parseDouble(costoStr);
+        } catch (NumberFormatException e) {
+            costo = 0;
+        }
+
+        try {
+            stock = Integer.parseInt(stockStr);
+        } catch (NumberFormatException e) {
+            stock = 0;
+        }
+
         String marca = campoMarca.getText().toString().trim();
         String presentacion = campoPresentacion.getText().toString().trim();
 
-        // 1. Guardar en SQLite (offline)
-        Producto producto = new Producto(codigo, descripcion, marca, presentacion, precio);
+        // Calcular ganancia
+        double ganancia = Producto.calcularGanancia(precio, costo);
+
+        // Guardar en SQLite
+        Producto producto = new Producto(codigo, descripcion, marca, presentacion, precio, costo, stock);
         long idLocal = dao.insertar(producto);
 
         if (idLocal > 0) {
-            Toast.makeText(this, "✅ Producto guardado localmente", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "✅ Producto guardado localmente\n💰 Ganancia: " + String.format("%.1f", ganancia) + "%", Toast.LENGTH_LONG).show();
 
-            // 2. Enviar a CouchDB (nube) si hay internet
+            // Enviar a CouchDB
             if (ConexionCouchDB.hayInternet(this)) {
                 enviarANube(producto, (int) idLocal);
             } else {
                 Toast.makeText(this, "⚠️ Sin internet. Se sincronizará después", Toast.LENGTH_LONG).show();
             }
 
-            // Ir a agregar fotos
             Intent intent = new Intent(this, AgregarFotosActivity.class);
             intent.putExtra("producto_id", (int) idLocal);
             startActivity(intent);
@@ -83,12 +104,13 @@ public class AgregarProductoActivity extends AppCompatActivity {
             JSONObject json = new JSONObject();
             json.put("codigo", producto.getCodigo());
             json.put("descripcion", producto.getDescripcion());
-            json.put("marca", producto.getMarca() != null ? producto.getMarca() : "");
-            json.put("presentacion", producto.getPresentacion() != null ? producto.getPresentacion() : "");
+            json.put("marca", producto.getMarca());
+            json.put("presentacion", producto.getPresentacion());
             json.put("precio", producto.getPrecio());
+            json.put("costo", producto.getCosto());
+            json.put("ganancia", producto.getGanancia());
+            json.put("stock", producto.getStock());
             json.put("timestamp", System.currentTimeMillis());
-
-            Toast.makeText(this, "📤 Enviando a la nube...", Toast.LENGTH_SHORT).show();
 
             new ConexionCouchDB.GuardarProductoTask(new ConexionCouchDB.GuardarProductoTask.OnGuardarListener() {
                 @Override
@@ -96,22 +118,19 @@ public class AgregarProductoActivity extends AppCompatActivity {
                     dao.marcarComoSincronizado(idLocal, cloudId, cloudRev);
                     runOnUiThread(() ->
                             Toast.makeText(AgregarProductoActivity.this,
-                                    "✅ Producto sincronizado con la nube\nID: " + cloudId,
-                                    Toast.LENGTH_LONG).show());
+                                    "✅ Sincronizado con la nube", Toast.LENGTH_SHORT).show());
                 }
 
                 @Override
                 public void onError(String error) {
                     runOnUiThread(() ->
                             Toast.makeText(AgregarProductoActivity.this,
-                                    "❌ Error en nube: " + error,
-                                    Toast.LENGTH_LONG).show());
+                                    "❌ Error en nube: " + error, Toast.LENGTH_SHORT).show());
                 }
             }).execute(json.toString());
 
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this, "Error al preparar datos: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 }
