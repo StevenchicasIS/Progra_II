@@ -109,7 +109,7 @@
             android:layout_height="56dp"
             android:layout_weight="1"
             android:layout_marginEnd="6dp"
-            android:text="➕ Agregar"
+            android:text="Agregar"
             android:textColor="@android:color/white"
             android:textStyle="bold"
             android:backgroundTint="@color/success"
@@ -123,7 +123,7 @@
             android:layout_height="56dp"
             android:layout_weight="1"
             android:layout_marginEnd="6dp"
-            android:text="📋 Ver Todos"
+            android:text="Ver Todos"
             android:textColor="@android:color/white"
             android:textStyle="bold"
             android:backgroundTint="@color/info"
@@ -137,7 +137,7 @@
             android:layout_height="56dp"
             android:layout_weight="1"
             android:layout_marginStart="6dp"
-            android:text="🌐 Cloud"
+            android:text="Cloud"
             android:textColor="@android:color/white"
             android:textStyle="bold"
             android:backgroundTint="@color/btn_sync"
@@ -164,16 +164,6 @@
             android:textStyle="bold"
             android:textColor="@color/text_primary"/>
 
-        <TextView
-            android:id="@+id/tvCantidad"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0 productos"
-            android:textSize="12sp"
-            android:background="@drawable/bg_badge_modern"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp"
-            android:textColor="@android:color/white"/>
 
     </LinearLayout>
 
