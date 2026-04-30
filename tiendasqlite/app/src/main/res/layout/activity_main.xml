@@ -84,7 +84,7 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Botones principales -->
+    <!-- Botones principales (AHORA CON 3 BOTONES) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -97,7 +97,7 @@
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="6dp"
             android:text="➕ Agregar"
             android:textColor="@android:color/white"
             android:textStyle="bold"
@@ -108,11 +108,23 @@
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
+            android:layout_marginEnd="6dp"
             android:text="📋 Ver Todos"
             android:textColor="@android:color/white"
             android:textStyle="bold"
             android:backgroundTint="#2196F3"/>
+
+        <!-- NUEVO BOTÓN WEBSERVICES -->
+        <Button
+            android:id="@+id/btnWebServices"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:text="🌐 WebServices"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:backgroundTint="#FF9800"/>
 
     </LinearLayout>
 
