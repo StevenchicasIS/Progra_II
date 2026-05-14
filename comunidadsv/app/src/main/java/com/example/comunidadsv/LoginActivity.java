@@ -129,11 +129,16 @@ public class LoginActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Boolean success) {
             if (success) {
+                // Guardar sesión y nombre
                 SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
                 prefs.edit().putBoolean("logueado", true)
                         .putString("nombre", nombreUsuario)
                         .apply();
-                Toast.makeText(LoginActivity.this, "Bienvenido " + nombreUsuario, Toast.LENGTH_SHORT).show();
+
+                // NOTIFICACIÓN DE BIENVENIDA (TOAST)
+                Toast.makeText(LoginActivity.this, "¡Bienvenido " + nombreUsuario + "!", Toast.LENGTH_LONG).show();
+
+                // Ir al FeedActivity
                 startActivity(new Intent(LoginActivity.this, FeedActivity.class));
                 finish();
             } else {

@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF">
-
-    <!-- CONTENIDO -->
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,7 +10,6 @@
         android:orientation="vertical">
 
         <!-- HEADER -->
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="70dp"
@@ -35,10 +30,18 @@
                 android:textColor="#0A7A33"
                 android:layout_marginStart="12dp"/>
 
+            <!-- Botón provisional para cerrar sesión -->
+            <Button
+                android:id="@+id/btnLogout"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="Salir"
+                android:backgroundTint="#D32F2F"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"/>
         </LinearLayout>
 
         <!-- FEED -->
-
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -58,13 +61,15 @@
                     android:padding="16dp">
 
                     <TextView
+                        android:id="@+id/txtUserName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Luis Hernandez"
+                        android:text="Usuario"
                         android:textStyle="bold"
                         android:textSize="18sp"/>
 
                     <TextView
+                        android:id="@+id/txtWelcomeMessage"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Bienvenido a ComunidadSV"
@@ -74,11 +79,9 @@
                 </LinearLayout>
 
             </LinearLayout>
-
         </ScrollView>
 
         <!-- BOTTOM NAVIGATION -->
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="75dp"
@@ -86,8 +89,6 @@
             android:background="#FFFFFF"
             android:elevation="8dp"
             android:paddingBottom="8dp">
-
-            <!-- HOME -->
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -106,10 +107,7 @@
                     android:layout_height="wrap_content"
                     android:text="Inicio"
                     android:textColor="#0A7A33"/>
-
             </LinearLayout>
-
-            <!-- MAPA -->
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -127,17 +125,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Mapa"/>
-
             </LinearLayout>
 
-            <!-- ESPACIO DEL BOTON -->
-
+            <!-- Espacio para el botón flotante -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"/>
-
-            <!-- CHAT -->
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -155,10 +149,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Chat"/>
-
             </LinearLayout>
-
-            <!-- PERFIL -->
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -176,7 +167,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Perfil"/>
-
             </LinearLayout>
 
         </LinearLayout>
@@ -184,7 +174,6 @@
     </LinearLayout>
 
     <!-- BOTON FLOTANTE -->
-
     <LinearLayout
         android:layout_width="70dp"
         android:layout_height="70dp"
@@ -201,7 +190,6 @@
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:src="@drawable/ic_add"/>
-
     </LinearLayout>
 
 </RelativeLayout>
