@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nombre completo"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/edtName"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:hint="Tu nombre"
+            android:padding="15dp"
+            android:layout_marginTop="8dp"
+            android:inputType="textPersonName" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Correo electrónico"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+
+        <EditText
+            android:id="@+id/edtEmail"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:hint="ejemplo@correo.com"
+            android:padding="15dp"
+            android:layout_marginTop="8dp"
+            android:inputType="textEmailAddress" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Contraseña"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+
+        <!-- Contenedor para el campo de contraseña + ícono -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:layout_marginTop="8dp">
+
+            <EditText
+                android:id="@+id/edtPassword"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:hint="********"
+                android:inputType="textPassword"
+                android:paddingStart="15dp"
+                android:paddingEnd="50dp"
+                android:paddingLeft="15dp"
+                android:paddingRight="50dp" />
+
+            <ImageView
+                android:id="@+id/ivTogglePassword"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_centerVertical="true"
+                android:layout_alignParentEnd="true"
+                android:layout_marginEnd="15dp"
+                android:src="@drawable/ic_eye_closed"
+                android:contentDescription="Mostrar contraseña" />
+
+        </RelativeLayout>
+
+        <Button
+            android:id="@+id/btnRegister"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="Registrarse"
+            android:layout_marginTop="24dp"
+            android:backgroundTint="#0A7A33" />
+
+        <TextView
+            android:id="@+id/txtLogin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Iniciar sesión"
+            android:textColor="#0A7A33"
+            android:textSize="16sp"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp" />
+
+    </LinearLayout>
+</ScrollView>
