@@ -13,14 +13,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import org.json.JSONObject;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.MessageDigest;
 
 public class RegisterActivity extends AppCompatActivity {
 
-    private EditText edtName, edtEmail, edtPassword;
+    private EditText edtName, edtEmail, edtPassword, edtUbicacion;
     private Button btnRegister;
     private TextView txtLogin;
     private ImageView ivTogglePassword;
@@ -34,20 +39,25 @@ public class RegisterActivity extends AppCompatActivity {
         edtName = findViewById(R.id.edtName);
         edtEmail = findViewById(R.id.edtEmail);
         edtPassword = findViewById(R.id.edtPassword);
+        edtUbicacion = findViewById(R.id.edtUbicacion);
         btnRegister = findViewById(R.id.btnRegister);
         txtLogin = findViewById(R.id.txtLogin);
         ivTogglePassword = findViewById(R.id.ivTogglePassword);
 
+        // Toggle para mostrar/ocultar contraseña
         ivTogglePassword.setOnClickListener(v -> {
             if (isPasswordVisible) {
+                // Ocultar contraseña
                 edtPassword.setTransformationMethod(PasswordTransformationMethod.getInstance());
-                ivTogglePassword.setImageResource(android.R.drawable.ic_menu_view);
+                ivTogglePassword.setImageResource(R.drawable.ic_eye_closed);
                 isPasswordVisible = false;
             } else {
+                // Mostrar contraseña
                 edtPassword.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
-                ivTogglePassword.setImageResource(android.R.drawable.ic_menu_camera);
+                ivTogglePassword.setImageResource(R.drawable.ic_eye_open);
                 isPasswordVisible = true;
             }
+            // Mantener el cursor al final del texto
             edtPassword.setSelection(edtPassword.getText().length());
         });
 
@@ -56,7 +66,8 @@ public class RegisterActivity extends AppCompatActivity {
                 String nombre = edtName.getText().toString().trim();
                 String correo = edtEmail.getText().toString().trim();
                 String password = edtPassword.getText().toString().trim();
-                new RegistrarUsuarioTask().execute(nombre, correo, password);
+                String ubicacion = edtUbicacion.getText().toString().trim();
+                new RegistrarUsuarioTask().execute(nombre, correo, password, ubicacion);
             }
         });
 
@@ -69,6 +80,7 @@ public class RegisterActivity extends AppCompatActivity {
         String name = edtName.getText().toString().trim();
         String email = edtEmail.getText().toString().trim();
         String password = edtPassword.getText().toString().trim();
+        String ubicacion = edtUbicacion.getText().toString().trim();
 
         if (TextUtils.isEmpty(name)) {
             edtName.setError("Nombre obligatorio");
@@ -93,6 +105,11 @@ public class RegisterActivity extends AppCompatActivity {
         if (password.length() < 6) {
             edtPassword.setError("Mínimo 6 caracteres");
             edtPassword.requestFocus();
+            return false;
+        }
+        if (TextUtils.isEmpty(ubicacion)) {
+            edtUbicacion.setError("¿Dónde vives?");
+            edtUbicacion.requestFocus();
             return false;
         }
         return true;
@@ -124,6 +141,7 @@ public class RegisterActivity extends AppCompatActivity {
             String nombre = params[0];
             String correo = params[1];
             String passwordHash = sha256(params[2]);
+            String ubicacion = params[3];
 
             try {
                 JSONObject usuario = new JSONObject();
@@ -131,6 +149,9 @@ public class RegisterActivity extends AppCompatActivity {
                 usuario.put("nombre", nombre);
                 usuario.put("correo", correo);
                 usuario.put("password", passwordHash);
+                usuario.put("ubicacion", ubicacion);
+                usuario.put("reset_token", JSONObject.NULL);
+                usuario.put("reset_expires", JSONObject.NULL);
 
                 URL url = new URL(Configuracion.SERVIDOR + "/db_usuarios");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -156,7 +177,16 @@ public class RegisterActivity extends AppCompatActivity {
                     JSONObject resp = new JSONObject(result.toString());
                     return resp.optBoolean("ok", false);
                 } else {
-                    errorMsg = "Error código: " + responseCode;
+                    InputStream errorIn = conn.getErrorStream();
+                    if (errorIn != null) {
+                        BufferedReader errorReader = new BufferedReader(new InputStreamReader(errorIn));
+                        StringBuilder errorSb = new StringBuilder();
+                        String errorLine;
+                        while ((errorLine = errorReader.readLine()) != null) errorSb.append(errorLine);
+                        errorMsg = errorSb.toString();
+                    } else {
+                        errorMsg = "Error código: " + responseCode;
+                    }
                     return false;
                 }
             } catch (Exception e) {

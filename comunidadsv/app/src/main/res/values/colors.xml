@@ -6,4 +6,9 @@
     <color name="gray">#EDEDED</color>
     <color name="black">#000000</color>
 
+
+    <color name="green_primary">#0A7A33</color>
+    <color name="gray_text">#666666</color>
+    <color name="gray_light">#999999</color>
 </resources>
+

@@ -1,64 +1,109 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
     android:background="#F8F8F8"
-    android:padding="24dp">
+    android:fillViewport="true"
+    tools:context=".WelcomeActivity">
 
-    <ImageView
-        android:layout_width="180dp"
-        android:layout_height="180dp"
-        android:src="@drawable/comunidad"
-        android:scaleType="centerInside"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Bienvenido a ComunidadSV"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="#0A7A33"
-        android:gravity="center"
-        android:layout_marginTop="24dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Comparte y ayuda a tu comunidad"
-        android:textSize="16sp"
-        android:textColor="#666666"
-        android:gravity="center"
-        android:layout_marginTop="10dp"/>
-
-    <Button
-        android:id="@+id/btnComenzar"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="55dp"
-        android:text="Comenzar"
-        android:textSize="18sp"
-        android:textColor="#FFFFFF"
-        android:backgroundTint="#0A7A33"
-        android:layout_marginTop="40dp"/>
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="¿Ya tienes cuenta?"
-        android:textSize="15sp"
-        android:layout_marginTop="25dp"/>
+        <!-- Logo -->
+        <ImageView
+            android:layout_width="130dp"
+            android:layout_height="130dp"
+            android:src="@drawable/comunidad"
+            android:scaleType="centerInside" />
 
-    <TextView
-        android:id="@+id/txtLogin"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Iniciar sesión"
-        android:textColor="#0A7A33"
-        android:textStyle="bold"
-        android:textSize="17sp"
-        android:layout_marginTop="6dp"/>
+        <!-- Título Bienvenido -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bienvenido a"
+            android:textSize="20sp"
+            android:textColor="#555555"
+            android:layout_marginTop="16dp" />
 
-</LinearLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ComunidadSV"
+            android:textSize="34sp"
+            android:textStyle="bold"
+            android:textColor="#0A7A33"
+            android:layout_marginTop="4dp" />
+
+        <!-- Línea decorativa -->
+        <View
+            android:layout_width="60dp"
+            android:layout_height="3dp"
+            android:layout_marginTop="16dp"
+            android:background="#0A7A33"
+            android:alpha="0.4" />
+
+        <!-- Descripción -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Comparte, ayuda y crece junto a tu comunidad. Conecta con vecinos, reporta incidentes y colabora en proyectos locales."
+            android:textSize="15sp"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:lineSpacingExtra="4dp"
+            android:layout_marginTop="28dp" />
+
+        <!-- Espaciador flexible -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="0.4" />
+
+        <!-- Botón Crear cuenta -->
+        <Button
+            android:id="@+id/btnComenzar"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="CREAR CUENTA"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#0A7A33"
+            android:stateListAnimator="@null"
+            android:elevation="0dp" />
+
+        <!-- Texto ¿Ya tienes cuenta? -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="¿Ya tienes cuenta?"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginTop="20dp" />
+
+        <!-- Iniciar sesión -->
+        <TextView
+            android:id="@+id/txtLogin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Iniciar sesión"
+            android:textColor="#0A7A33"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackground" />
+
+        <!-- Pequeño margen inferior para no pegar al borde -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="0.1" />
+
+    </LinearLayout>
+</ScrollView>
