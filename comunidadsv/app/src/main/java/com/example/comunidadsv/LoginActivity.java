@@ -103,6 +103,7 @@ public class LoginActivity extends AppCompatActivity {
         private String errorMsg = "";
         private String nombreUsuario = "";
         private String ubicacionUsuario = "";
+        private String userId = "";
 
         @Override
         protected Boolean doInBackground(String... params) {
@@ -132,7 +133,7 @@ public class LoginActivity extends AppCompatActivity {
                         String storedPass = usuario.getString("password");
                         if (storedPass.equals(passwordHash)) {
                             nombreUsuario = usuario.getString("nombre");
-                            // Obtener ubicación (si existe, si no, poner "No especificada")
+                            userId = usuario.getString("_id");  // Guardamos el ID del documento
                             if (usuario.has("ubicacion") && !usuario.isNull("ubicacion")) {
                                 ubicacionUsuario = usuario.getString("ubicacion");
                             } else {
@@ -165,6 +166,7 @@ public class LoginActivity extends AppCompatActivity {
                 editor.putBoolean("logueado", true);
                 editor.putString("nombre", nombreUsuario);
                 editor.putString("ubicacion", ubicacionUsuario);
+                editor.putString("userId", userId);  // Guardamos el ID
                 editor.apply();
 
                 Toast.makeText(LoginActivity.this, "¡Bienvenido " + nombreUsuario + "!", Toast.LENGTH_LONG).show();

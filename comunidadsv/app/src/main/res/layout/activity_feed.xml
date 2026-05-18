@@ -40,14 +40,6 @@
                     android:textStyle="bold"
                     android:textColor="#0A7A33" />
 
-                <TextView
-                    android:id="@+id/txtUserName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Usuario"
-                    android:textSize="12sp"
-                    android:textColor="#666666" />
-
             </LinearLayout>
 
         </LinearLayout>

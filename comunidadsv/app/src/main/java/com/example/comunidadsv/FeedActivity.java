@@ -72,8 +72,9 @@ public class FeedActivity extends AppCompatActivity {
             Toast.makeText(this, "Próximamente: Chat", Toast.LENGTH_SHORT).show();
         });
 
+        // MODIFICADO: Abrir ProfileActivity en lugar de mostrar un Toast
         navProfile.setOnClickListener(v -> {
-            Toast.makeText(this, "Próximamente: Perfil", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(FeedActivity.this, ProfileActivity.class));
         });
 
         // Botón flotante para crear publicación
