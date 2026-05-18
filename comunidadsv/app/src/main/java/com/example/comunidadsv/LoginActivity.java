@@ -5,8 +5,11 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.text.method.HideReturnsTransformationMethod;
+import android.text.method.PasswordTransformationMethod;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -24,7 +27,9 @@ public class LoginActivity extends AppCompatActivity {
 
     private EditText edtEmail, edtPassword;
     private Button btnLogin;
-    private TextView txtRegister;
+    private TextView txtRegister, txtForgotPassword;
+    private ImageView ivTogglePassword;
+    private boolean isPasswordVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +40,21 @@ public class LoginActivity extends AppCompatActivity {
         edtPassword = findViewById(R.id.edtPassword);
         btnLogin = findViewById(R.id.btnLogin);
         txtRegister = findViewById(R.id.txtRegister);
+        txtForgotPassword = findViewById(R.id.txtForgotPassword);
+        ivTogglePassword = findViewById(R.id.ivTogglePassword);
+
+        ivTogglePassword.setOnClickListener(v -> {
+            if (isPasswordVisible) {
+                edtPassword.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                ivTogglePassword.setImageResource(R.drawable.ic_eye_closed);
+                isPasswordVisible = false;
+            } else {
+                edtPassword.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
+                ivTogglePassword.setImageResource(R.drawable.ic_eye_open);
+                isPasswordVisible = true;
+            }
+            edtPassword.setSelection(edtPassword.getText().length());
+        });
 
         btnLogin.setOnClickListener(v -> {
             String email = edtEmail.getText().toString().trim();
@@ -54,6 +74,10 @@ public class LoginActivity extends AppCompatActivity {
 
         txtRegister.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
+        });
+
+        txtForgotPassword.setOnClickListener(v -> {
+            startActivity(new Intent(LoginActivity.this, ForgotPasswordActivity.class));
         });
     }
 
@@ -78,6 +102,7 @@ public class LoginActivity extends AppCompatActivity {
     private class LoginTask extends AsyncTask<String, Void, Boolean> {
         private String errorMsg = "";
         private String nombreUsuario = "";
+        private String ubicacionUsuario = "";
 
         @Override
         protected Boolean doInBackground(String... params) {
@@ -107,6 +132,12 @@ public class LoginActivity extends AppCompatActivity {
                         String storedPass = usuario.getString("password");
                         if (storedPass.equals(passwordHash)) {
                             nombreUsuario = usuario.getString("nombre");
+                            // Obtener ubicación (si existe, si no, poner "No especificada")
+                            if (usuario.has("ubicacion") && !usuario.isNull("ubicacion")) {
+                                ubicacionUsuario = usuario.getString("ubicacion");
+                            } else {
+                                ubicacionUsuario = "No especificada";
+                            }
                             return true;
                         } else {
                             errorMsg = "Contraseña incorrecta";
@@ -129,16 +160,14 @@ public class LoginActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Boolean success) {
             if (success) {
-                // Guardar sesión y nombre
                 SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
-                prefs.edit().putBoolean("logueado", true)
-                        .putString("nombre", nombreUsuario)
-                        .apply();
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean("logueado", true);
+                editor.putString("nombre", nombreUsuario);
+                editor.putString("ubicacion", ubicacionUsuario);
+                editor.apply();
 
-                // NOTIFICACIÓN DE BIENVENIDA (TOAST)
                 Toast.makeText(LoginActivity.this, "¡Bienvenido " + nombreUsuario + "!", Toast.LENGTH_LONG).show();
-
-                // Ir al FeedActivity
                 startActivity(new Intent(LoginActivity.this, FeedActivity.class));
                 finish();
             } else {

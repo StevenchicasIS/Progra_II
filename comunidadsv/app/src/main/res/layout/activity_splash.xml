@@ -1,26 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:background="#FFFFFF">
+    android:background="#FFFFFF"
+    tools:context=".SplashActivity">
 
-    <ImageView
-        android:layout_width="140dp"
-        android:layout_height="140dp"
-        android:src="@drawable/comunidad"
-        android:scaleType="centerInside"/>
+    <!-- Contenedor principal centrado -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp">
 
+        <!-- Logo con animación de escala -->
+        <ImageView
+            android:id="@+id/logoImage"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:src="@drawable/comunidad"
+            android:scaleType="centerInside"
+            android:alpha="0.9" />
+
+        <!-- Título principal -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ComunidadSV"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:textColor="#0A7A33"
+            android:layout_marginTop="20dp"
+            android:letterSpacing="0.02" />
+
+        <!-- Línea decorativa -->
+        <View
+            android:layout_width="60dp"
+            android:layout_height="3dp"
+            android:layout_marginTop="12dp"
+            android:background="#0A7A33"
+            android:alpha="0.5" />
+
+        <!-- Subtítulo -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Conectando comunidades"
+            android:textSize="14sp"
+            android:textColor="#999999"
+            android:layout_marginTop="12dp"
+            android:letterSpacing="0.05" />
+
+    </LinearLayout>
+
+    <!-- Indicador de carga en la parte inferior -->
+    <ProgressBar
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="40dp"
+        android:indeterminateTint="#0A7A33" />
+
+    <!-- Texto de versión (opcional) -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="ComunidadSV"
-        android:textSize="30sp"
-        android:textStyle="bold"
-        android:textColor="#0A7A33"
-        android:layout_marginTop="20dp"/>
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="12dp"
+        android:text="v1.0.0"
+        android:textSize="12sp"
+        android:textColor="#CCCCCC" />
 
-</LinearLayout>
+</RelativeLayout>

@@ -1,70 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    tools:context=".RegisterActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:gravity="center_vertical"
-        android:padding="24dp">
+        android:padding="32dp"
+        android:gravity="center_horizontal">
+
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/comunidad"
+            android:scaleType="centerInside"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="Crear cuenta"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#0A7A33"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Únete a nuestra comunidad"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="32dp" />
+
+        <!-- Nombre -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:text="Nombre completo"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
 
         <EditText
             android:id="@+id/edtName"
             android:layout_width="match_parent"
             android:layout_height="55dp"
-            android:hint="Tu nombre"
-            android:padding="15dp"
-            android:layout_marginTop="8dp"
-            android:inputType="textPersonName" />
+            android:hint="Ej: María González"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:background="@drawable/edittext_style"
+            android:inputType="textPersonName"
+            android:layout_marginBottom="20dp" />
 
+        <!-- Correo -->
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Correo electrónico"
             android:textStyle="bold"
-            android:layout_marginTop="16dp" />
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
 
         <EditText
             android:id="@+id/edtEmail"
             android:layout_width="match_parent"
             android:layout_height="55dp"
             android:hint="ejemplo@correo.com"
-            android:padding="15dp"
-            android:layout_marginTop="8dp"
-            android:inputType="textEmailAddress" />
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:background="@drawable/edittext_style"
+            android:inputType="textEmailAddress"
+            android:layout_marginBottom="20dp" />
 
+        <!-- Contraseña -->
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Contraseña"
             android:textStyle="bold"
-            android:layout_marginTop="16dp" />
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
 
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="55dp"
-            android:layout_marginTop="8dp">
+            android:layout_marginBottom="20dp">
 
             <EditText
                 android:id="@+id/edtPassword"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:hint="********"
-                android:inputType="textPassword"
-                android:paddingStart="15dp"
-                android:paddingEnd="50dp"
-                android:paddingLeft="15dp"
-                android:paddingRight="50dp" />
+                android:hint="Mínimo 6 caracteres"
+                android:paddingStart="16dp"
+                android:paddingEnd="56dp"
+                android:background="@drawable/edittext_style"
+                android:inputType="textPassword" />
 
             <ImageView
                 android:id="@+id/ivTogglePassword"
@@ -72,18 +112,91 @@
                 android:layout_height="24dp"
                 android:layout_centerVertical="true"
                 android:layout_alignParentEnd="true"
-                android:layout_marginEnd="15dp"
-                android:src="@android:drawable/ic_menu_view"
+                android:layout_marginEnd="16dp"
+                android:src="@drawable/ic_eye_closed"
                 android:contentDescription="Mostrar contraseña" />
         </RelativeLayout>
 
+        <!-- Ubicación -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="¿Dónde vives?"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/edtUbicacion"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:hint="Ej: San Salvador, Usulután, Santa Ana..."
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:background="@drawable/edittext_style"
+            android:inputType="textPostalAddress"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Esto nos ayuda a mostrarte contenido relevante de tu zona"
+            android:textSize="11sp"
+            android:textColor="#999999"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Botón Registrarse -->
         <Button
             android:id="@+id/btnRegister"
             android:layout_width="match_parent"
             android:layout_height="55dp"
-            android:text="Registrarse"
-            android:layout_marginTop="24dp"
-            android:backgroundTint="#0A7A33" />
+            android:text="REGISTRARSE"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#0A7A33"
+            android:stateListAnimator="@null"
+            android:elevation="0dp"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Separador -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="24dp">
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="#DDDDDD" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="o"
+                android:textColor="#999999"
+                android:textSize="14sp"
+                android:paddingHorizontal="16dp" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="#DDDDDD" />
+
+        </LinearLayout>
+
+        <!-- Enlace a Login -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="¿Ya tienes cuenta?"
+            android:textSize="14sp"
+            android:textColor="#666666" />
 
         <TextView
             android:id="@+id/txtLogin"
@@ -91,9 +204,12 @@
             android:layout_height="wrap_content"
             android:text="Iniciar sesión"
             android:textColor="#0A7A33"
+            android:textStyle="bold"
             android:textSize="16sp"
-            android:layout_gravity="center"
-            android:layout_marginTop="20dp" />
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="30dp"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackground" />
 
     </LinearLayout>
 </ScrollView>
