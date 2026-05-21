@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Outline;
+import android.os.AsyncTask;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import org.json.JSONObject;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -59,8 +69,14 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.txtUbicacion.setText(post.getUserUbicacion());
         holder.txtTiempo.setText(getTimeAgo(post.getFecha()));
 
-        // Mostrar foto de perfil del usuario
-        setupUserPhoto(holder, post);
+        // Click en el nombre del usuario
+        holder.txtUserName.setOnClickListener(v -> {
+            if (!post.getUserId().equals(currentUserId)) {
+                showFollowDialog(post);
+            } else {
+                Toast.makeText(context, "Eres tú mismo", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         if (post.getCategoria() != null && !post.getCategoria().isEmpty()) {
             holder.txtCategoria.setText(post.getCategoria());
@@ -73,6 +89,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.txtContenido.setText(post.getContenido());
 
         setupImagenes(holder, post);
+        setupUserPhoto(holder, post);
 
         holder.txtLikes.setText(String.valueOf(post.getLikes()));
         if (post.isLikedByUser(currentUserId)) {
@@ -129,6 +146,117 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             }
         } else {
             holder.imgUserPhoto.setImageResource(R.drawable.ic_profile);
+        }
+    }
+
+    private void showFollowDialog(Post post) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_enviar_solicitud, null);
+
+        TextView txtNombreUsuario = dialogView.findViewById(R.id.txtNombreUsuario);
+        TextView txtUbicacionUsuario = dialogView.findViewById(R.id.txtUbicacionUsuario);
+        TextView txtMensaje = dialogView.findViewById(R.id.txtMensaje);
+        Button btnEnviarSolicitud = dialogView.findViewById(R.id.btnEnviarSolicitud);
+        Button btnCancelar = dialogView.findViewById(R.id.btnCancelar);
+
+        txtNombreUsuario.setText(post.getUserName());
+        txtUbicacionUsuario.setText(post.getUserUbicacion());
+        txtMensaje.setText("¿Quieres enviarle una solicitud para poder chatear?");
+
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+
+        btnEnviarSolicitud.setOnClickListener(v -> {
+            enviarSolicitud(post.getUserId(), post.getUserName());
+            dialog.dismiss();
+        });
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    private void enviarSolicitud(String receptorId, String receptorNombre) {
+        SharedPreferences prefs = context.getSharedPreferences("ComunidadSV", Context.MODE_PRIVATE);
+        String emisorId = prefs.getString("userId", "");
+        String emisorNombre = prefs.getString("nombre", "Usuario");
+        String emisorFoto = prefs.getString("fotoPerfil", "");
+
+        new EnviarSolicitudTask().execute(emisorId, emisorNombre, emisorFoto, receptorId, receptorNombre);
+    }
+
+    private void setBasicAuth(HttpURLConnection conn) {
+        String auth = Configuracion.USER + ":" + Configuracion.PASS;
+        byte[] encoded = android.util.Base64.encode(auth.getBytes(), android.util.Base64.NO_WRAP);
+        conn.setRequestProperty("Authorization", "Basic " + new String(encoded));
+    }
+
+    private class EnviarSolicitudTask extends AsyncTask<String, Void, Boolean> {
+        private String errorMsg = "";
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            String emisorId = params[0];
+            String emisorNombre = params[1];
+            String emisorFoto = params[2];
+            String receptorId = params[3];
+
+            try {
+                // Verificar si ya existe una solicitud pendiente
+                String checkUrl = Configuracion.SERVIDOR + "/db_solicitudes/_design/solicitudes/_view/pendientes?key=\"" + receptorId + "\"";
+                URL checkUrlObj = new URL(checkUrl);
+                HttpURLConnection checkConn = (HttpURLConnection) checkUrlObj.openConnection();
+                setBasicAuth(checkConn);
+                checkConn.setRequestMethod("GET");
+
+                if (checkConn.getResponseCode() == 200) {
+                    InputStream in = checkConn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject response = new JSONObject(sb.toString());
+                    // Si ya hay solicitud pendiente, no enviar otra
+                    if (response.optJSONArray("rows") != null && response.optJSONArray("rows").length() > 0) {
+                        errorMsg = "Ya tienes una solicitud pendiente para este usuario";
+                        return false;
+                    }
+                }
+
+                // Crear nueva solicitud
+                Solicitud solicitud = new Solicitud(emisorId, emisorNombre, emisorFoto, receptorId);
+                String putUrl = Configuracion.SERVIDOR + "/db_solicitudes/" + solicitud.getId();
+                URL putUrlObj = new URL(putUrl);
+                HttpURLConnection putConn = (HttpURLConnection) putUrlObj.openConnection();
+                setBasicAuth(putConn);
+                putConn.setRequestMethod("PUT");
+                putConn.setRequestProperty("Content-Type", "application/json");
+                putConn.setDoOutput(true);
+
+                OutputStream os = putConn.getOutputStream();
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                writer.write(solicitud.toJSON().toString());
+                writer.flush();
+                writer.close();
+                os.close();
+
+                int responseCode = putConn.getResponseCode();
+                return responseCode == 201 || responseCode == 202;
+
+            } catch (Exception e) {
+                errorMsg = e.getMessage();
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Boolean success) {
+            if (success) {
+                Toast.makeText(context, "Solicitud enviada correctamente", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(context, "Error: " + errorMsg, Toast.LENGTH_SHORT).show();
+            }
         }
     }
 

@@ -21,6 +21,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -35,6 +36,7 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
     private TextView txtNombre, txtUbicacion;
     private TextView txtPublicacionesCount, txtSeguidoresCount, txtSeguidosCount;
     private Button btnEditarPerfil;
+    private Button btnSeguir;
     private ImageView imgProfile;
     private ImageView btnLogout;
     private RecyclerView recyclerViewMisPublicaciones;
@@ -47,6 +49,7 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
     private List<Post> misPublicaciones;
     private String userId;
     private String currentUserId;
+    private boolean isOwnProfile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +62,7 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         txtSeguidoresCount = findViewById(R.id.txtSeguidoresCount);
         txtSeguidosCount = findViewById(R.id.txtSeguidosCount);
         btnEditarPerfil = findViewById(R.id.btnEditarPerfil);
+        btnSeguir = findViewById(R.id.btnSeguir);
         imgProfile = findViewById(R.id.imgProfile);
         btnLogout = findViewById(R.id.btnLogout);
         recyclerViewMisPublicaciones = findViewById(R.id.recyclerViewMisPublicaciones);
@@ -76,6 +80,25 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
         currentUserId = prefs.getString("userId", "");
 
+        userId = getIntent().getStringExtra("userId");
+        if (userId == null || userId.isEmpty()) {
+            userId = currentUserId;
+        }
+
+        isOwnProfile = userId.equals(currentUserId);
+
+        // Configurar visibilidad de botones
+        if (isOwnProfile) {
+            btnEditarPerfil.setVisibility(View.VISIBLE);
+            btnSeguir.setVisibility(View.GONE);
+            btnLogout.setVisibility(View.VISIBLE);
+        } else {
+            btnEditarPerfil.setVisibility(View.GONE);
+            btnSeguir.setVisibility(View.VISIBLE);
+            btnLogout.setVisibility(View.GONE);
+            checkIfFollowing();
+        }
+
         postAdapter = new PostAdapter(this, misPublicaciones, currentUserId, this);
         recyclerViewMisPublicaciones.setAdapter(postAdapter);
 
@@ -83,27 +106,23 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
 
         loadUserData();
         loadUserPosts();
-
-        txtPublicacionesCount.setText("0");
-        txtSeguidoresCount.setText("0");
-        txtSeguidosCount.setText("0");
+        loadFollowersCount();
+        loadFollowingCount();
 
         btnEditarPerfil.setOnClickListener(v -> {
             Intent intent = new Intent(ProfileActivity.this, EditProfileActivity.class);
             startActivityForResult(intent, 200);
         });
 
-        btnLogout.setOnClickListener(v -> showLogoutDialog());
-    }
+        btnSeguir.setOnClickListener(v -> {
+            if (btnSeguir.getText().toString().equals("Seguir")) {
+                enviarSolicitudSeguimiento();
+            } else {
+                dejarDeSeguir();
+            }
+        });
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 200 && resultCode == RESULT_OK) {
-            // Actualizar todos los datos al volver de editar perfil
-            loadUserData();
-            loadUserPosts();
-        }
+        btnLogout.setOnClickListener(v -> showLogoutDialog());
     }
 
     private void setupBottomNavigation() {
@@ -123,8 +142,11 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         });
 
         navProfile.setOnClickListener(v -> {
+            // Recargar datos
             loadUserData();
             loadUserPosts();
+            loadFollowersCount();
+            loadFollowingCount();
         });
     }
 
@@ -133,28 +155,44 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         super.onResume();
         loadUserData();
         loadUserPosts();
+        loadFollowersCount();
+        loadFollowingCount();
+        if (!isOwnProfile) {
+            checkIfFollowing();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 200 && resultCode == RESULT_OK) {
+            loadUserData();
+            loadUserPosts();
+        }
     }
 
     private void loadUserData() {
-        SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
-        String nombre = prefs.getString("nombre", "Usuario");
-        String ubicacion = prefs.getString("ubicacion", "Sin ubicación");
-        String fotoBase64 = prefs.getString("fotoPerfil", "");
-        userId = prefs.getString("userId", "");
+        if (isOwnProfile) {
+            SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
+            String nombre = prefs.getString("nombre", "Usuario");
+            String ubicacion = prefs.getString("ubicacion", "Sin ubicación");
+            String fotoBase64 = prefs.getString("fotoPerfil", "");
 
-        txtNombre.setText(nombre);
-        txtUbicacion.setText(ubicacion);
+            txtNombre.setText(nombre);
+            txtUbicacion.setText(ubicacion);
 
-        // Cargar foto desde Base64
-        if (!fotoBase64.isEmpty()) {
-            Bitmap bitmap = base64ToBitmap(fotoBase64);
-            if (bitmap != null) {
-                imgProfile.setImageBitmap(bitmap);
+            if (!fotoBase64.isEmpty()) {
+                Bitmap bitmap = base64ToBitmap(fotoBase64);
+                if (bitmap != null) {
+                    imgProfile.setImageBitmap(bitmap);
+                } else {
+                    imgProfile.setImageResource(R.drawable.ic_profile);
+                }
             } else {
                 imgProfile.setImageResource(R.drawable.ic_profile);
             }
         } else {
-            imgProfile.setImageResource(R.drawable.ic_profile);
+            new LoadUserDataTask().execute();
         }
     }
 
@@ -171,6 +209,28 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
     private void loadUserPosts() {
         new LoadUserPostsTask().execute();
     }
+
+    private void loadFollowersCount() {
+        new LoadFollowersCountTask().execute();
+    }
+
+    private void loadFollowingCount() {
+        new LoadFollowingCountTask().execute();
+    }
+
+    private void checkIfFollowing() {
+        new CheckFollowingTask().execute();
+    }
+
+    private void enviarSolicitudSeguimiento() {
+        new EnviarSolicitudTask().execute();
+    }
+
+    private void dejarDeSeguir() {
+        new UnfollowTask().execute();
+    }
+
+    // ========== IMPLEMENTACIÓN DE OnPostActionListener ==========
 
     @Override
     public void onLikeClicked(Post post, int position) {
@@ -210,6 +270,276 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         conn.setRequestProperty("Authorization", "Basic " + new String(encoded));
     }
 
+    // ========== TAREAS ASINCRÓNICAS ==========
+
+    private class LoadUserDataTask extends AsyncTask<Void, Void, String[]> {
+        @Override
+        protected String[] doInBackground(Void... voids) {
+            try {
+                String urlStr = Configuracion.SERVIDOR + "/db_usuarios/" + userId;
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                setBasicAuth(conn);
+                conn.setRequestMethod("GET");
+
+                if (conn.getResponseCode() == 200) {
+                    InputStream in = conn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject user = new JSONObject(sb.toString());
+
+                    return new String[]{
+                            user.optString("nombre", "Usuario"),
+                            user.optString("ubicacion", "Sin ubicación"),
+                            user.optString("fotoPerfil", "")
+                    };
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return new String[]{"Usuario", "Sin ubicación", ""};
+        }
+
+        @Override
+        protected void onPostExecute(String[] data) {
+            txtNombre.setText(data[0]);
+            txtUbicacion.setText(data[1]);
+
+            if (!data[2].isEmpty()) {
+                Bitmap bitmap = base64ToBitmap(data[2]);
+                if (bitmap != null) {
+                    imgProfile.setImageBitmap(bitmap);
+                } else {
+                    imgProfile.setImageResource(R.drawable.ic_profile);
+                }
+            } else {
+                imgProfile.setImageResource(R.drawable.ic_profile);
+            }
+        }
+    }
+
+    private class LoadFollowersCountTask extends AsyncTask<Void, Void, Integer> {
+        @Override
+        protected Integer doInBackground(Void... voids) {
+            int count = 0;
+            try {
+                String urlStr = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguido?key=\"" + userId + "\"";
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                setBasicAuth(conn);
+                conn.setRequestMethod("GET");
+
+                if (conn.getResponseCode() == 200) {
+                    InputStream in = conn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject response = new JSONObject(sb.toString());
+                    JSONArray rows = response.optJSONArray("rows");
+                    if (rows != null) {
+                        count = rows.length();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return count;
+        }
+
+        @Override
+        protected void onPostExecute(Integer count) {
+            txtSeguidoresCount.setText(String.valueOf(count));
+        }
+    }
+
+    private class LoadFollowingCountTask extends AsyncTask<Void, Void, Integer> {
+        @Override
+        protected Integer doInBackground(Void... voids) {
+            int count = 0;
+            try {
+                String urlStr = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + userId + "\"";
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                setBasicAuth(conn);
+                conn.setRequestMethod("GET");
+
+                if (conn.getResponseCode() == 200) {
+                    InputStream in = conn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject response = new JSONObject(sb.toString());
+                    JSONArray rows = response.optJSONArray("rows");
+                    if (rows != null) {
+                        count = rows.length();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return count;
+        }
+
+        @Override
+        protected void onPostExecute(Integer count) {
+            txtSeguidosCount.setText(String.valueOf(count));
+        }
+    }
+
+    private class CheckFollowingTask extends AsyncTask<Void, Void, Boolean> {
+        @Override
+        protected Boolean doInBackground(Void... voids) {
+            try {
+                String urlStr = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + currentUserId + "\"";
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                setBasicAuth(conn);
+                conn.setRequestMethod("GET");
+
+                if (conn.getResponseCode() == 200) {
+                    InputStream in = conn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject response = new JSONObject(sb.toString());
+                    JSONArray rows = response.optJSONArray("rows");
+
+                    if (rows != null) {
+                        for (int i = 0; i < rows.length(); i++) {
+                            JSONObject row = rows.getJSONObject(i);
+                            String followingId = row.optString("value");
+                            if (followingId.equals(userId)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean isFollowing) {
+            if (isFollowing) {
+                btnSeguir.setText("Dejar de seguir");
+                btnSeguir.setBackgroundTintList(getColorStateList(R.color.gray));
+            } else {
+                btnSeguir.setText("Seguir");
+                btnSeguir.setBackgroundTintList(getColorStateList(R.color.green_primary));
+            }
+        }
+    }
+
+    private class EnviarSolicitudTask extends AsyncTask<Void, Void, Boolean> {
+        private String errorMsg = "";
+
+        @Override
+        protected Boolean doInBackground(Void... voids) {
+            try {
+                SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
+                String emisorNombre = prefs.getString("nombre", "Usuario");
+                String emisorFoto = prefs.getString("fotoPerfil", "");
+
+                Solicitud solicitud = new Solicitud(currentUserId, emisorNombre, emisorFoto, userId);
+                String putUrl = Configuracion.SERVIDOR + "/db_solicitudes/" + solicitud.getId();
+                URL putUrlObj = new URL(putUrl);
+                HttpURLConnection putConn = (HttpURLConnection) putUrlObj.openConnection();
+                setBasicAuth(putConn);
+                putConn.setRequestMethod("PUT");
+                putConn.setRequestProperty("Content-Type", "application/json");
+                putConn.setDoOutput(true);
+
+                OutputStream os = putConn.getOutputStream();
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                writer.write(solicitud.toJSON().toString());
+                writer.flush();
+                writer.close();
+                os.close();
+
+                return putConn.getResponseCode() == 201 || putConn.getResponseCode() == 202;
+            } catch (Exception e) {
+                errorMsg = e.getMessage();
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Boolean success) {
+            if (success) {
+                Toast.makeText(ProfileActivity.this, "Solicitud enviada", Toast.LENGTH_SHORT).show();
+                btnSeguir.setText("Solicitud enviada");
+                btnSeguir.setEnabled(false);
+            } else {
+                Toast.makeText(ProfileActivity.this, "Error: " + errorMsg, Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private class UnfollowTask extends AsyncTask<Void, Void, Boolean> {
+        @Override
+        protected Boolean doInBackground(Void... voids) {
+            try {
+                // Buscar el follow existente
+                String searchUrl = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + currentUserId + "\"";
+                URL searchUrlObj = new URL(searchUrl);
+                HttpURLConnection searchConn = (HttpURLConnection) searchUrlObj.openConnection();
+                setBasicAuth(searchConn);
+                searchConn.setRequestMethod("GET");
+
+                if (searchConn.getResponseCode() == 200) {
+                    InputStream in = searchConn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject response = new JSONObject(sb.toString());
+                    JSONArray rows = response.optJSONArray("rows");
+
+                    if (rows != null) {
+                        for (int i = 0; i < rows.length(); i++) {
+                            JSONObject row = rows.getJSONObject(i);
+                            String followingId = row.optString("value");
+                            if (followingId.equals(userId)) {
+                                String docId = row.optString("id");
+                                // Eliminar el follow
+                                String deleteUrl = Configuracion.SERVIDOR + "/db_seguidores/" + docId;
+                                URL deleteUrlObj = new URL(deleteUrl);
+                                HttpURLConnection deleteConn = (HttpURLConnection) deleteUrlObj.openConnection();
+                                setBasicAuth(deleteConn);
+                                deleteConn.setRequestMethod("DELETE");
+                                return deleteConn.getResponseCode() == 200;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean success) {
+            if (success) {
+                Toast.makeText(ProfileActivity.this, "Dejaste de seguir", Toast.LENGTH_SHORT).show();
+                btnSeguir.setText("Seguir");
+                btnSeguir.setBackgroundTintList(getColorStateList(R.color.green_primary));
+                btnSeguir.setEnabled(true);
+                loadFollowersCount();
+                loadFollowingCount();
+            } else {
+                Toast.makeText(ProfileActivity.this, "Error", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     private class LoadUserPostsTask extends AsyncTask<Void, Void, List<Post>> {
         private String errorMsg = "";
 
@@ -224,7 +554,7 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         protected List<Post> doInBackground(Void... voids) {
             List<Post> userPosts = new ArrayList<>();
             try {
-                String encodedUserId = java.net.URLEncoder.encode("\"" + currentUserId + "\"", "UTF-8");
+                String encodedUserId = java.net.URLEncoder.encode("\"" + userId + "\"", "UTF-8");
                 String urlStr = Configuracion.SERVIDOR + "/db_publicaciones/_design/publicaciones/_view/por_usuario?key=" + encodedUserId + "&descending=true";
                 URL url = new URL(urlStr);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -302,9 +632,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 setBasicAuth(getConn);
                 getConn.setRequestMethod("GET");
 
-                int getCode = getConn.getResponseCode();
-                if (getCode != 200) {
-                    errorMsg = "Error al obtener publicación: " + getCode;
+                if (getConn.getResponseCode() != 200) {
+                    errorMsg = "Error al obtener publicación";
                     return false;
                 }
 
@@ -320,8 +649,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 if (likedByArray == null) likedByArray = new JSONArray();
 
                 int currentLikes = doc.optInt("likes", 0);
-
                 boolean yaDioLike = false;
+
                 for (int i = 0; i < likedByArray.length(); i++) {
                     if (likedByArray.getString(i).equals(currentUserId)) {
                         yaDioLike = true;
@@ -349,7 +678,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 }
 
                 String rev = doc.getString("_rev");
-
                 String putUrl = Configuracion.SERVIDOR + "/db_publicaciones/" + post.getId() + "?rev=" + rev;
                 URL putUrlObj = new URL(putUrl);
                 HttpURLConnection putConn = (HttpURLConnection) putUrlObj.openConnection();
@@ -370,7 +698,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
 
             } catch (Exception e) {
                 errorMsg = e.getMessage();
-                e.printStackTrace();
                 return false;
             }
         }
@@ -379,7 +706,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         protected void onPostExecute(Boolean success) {
             if (success) {
                 postAdapter.updatePost(position, post);
-                Toast.makeText(ProfileActivity.this, "Like actualizado", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(ProfileActivity.this, "Error: " + errorMsg, Toast.LENGTH_LONG).show();
             }
@@ -403,9 +729,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 setBasicAuth(getConn);
                 getConn.setRequestMethod("GET");
 
-                int getCode = getConn.getResponseCode();
-                if (getCode != 200) {
-                    errorMsg = "Error al obtener publicación: " + getCode;
+                if (getConn.getResponseCode() != 200) {
+                    errorMsg = "Error al obtener publicación";
                     return false;
                 }
 
@@ -417,15 +742,14 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 String docJson = sb.toString();
 
                 JSONObject doc = new JSONObject(docJson);
-
                 JSONArray commentsArray = new JSONArray();
+
                 for (Comment c : post.getComments()) {
                     commentsArray.put(c.toJSON());
                 }
                 doc.put("comments", commentsArray);
 
                 String rev = doc.getString("_rev");
-
                 String putUrl = Configuracion.SERVIDOR + "/db_publicaciones/" + post.getId() + "?rev=" + rev;
                 URL putUrlObj = new URL(putUrl);
                 HttpURLConnection putConn = (HttpURLConnection) putUrlObj.openConnection();
@@ -446,7 +770,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
 
             } catch (Exception e) {
                 errorMsg = e.getMessage();
-                e.printStackTrace();
                 return false;
             }
         }
@@ -455,7 +778,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         protected void onPostExecute(Boolean success) {
             if (success) {
                 postAdapter.updatePost(position, post);
-                Toast.makeText(ProfileActivity.this, "Comentario agregado", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(ProfileActivity.this, "Error: " + errorMsg, Toast.LENGTH_LONG).show();
             }
