@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -24,7 +25,9 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPostActionListener {
 
@@ -36,8 +39,11 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
     private TextView tabParaTi, tabSiguiendo;
     private LinearLayout navHome, navMap, navChat, navProfile;
     private FloatingActionButton fabAddPost;
+    private RelativeLayout iconSolicitudes;
+    private TextView badgeSolicitudes;
 
-    private String currentFilter = "parati"; // parati, siguiendo
+    private String currentFilter = "parati";
+    private Set<String> followingIds = new HashSet<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +59,8 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         navChat = findViewById(R.id.navChat);
         navProfile = findViewById(R.id.navProfile);
         fabAddPost = findViewById(R.id.fabAddPost);
+        iconSolicitudes = findViewById(R.id.iconSolicitudes);
+        badgeSolicitudes = findViewById(R.id.badgeSolicitudes);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         posts = new ArrayList<>();
@@ -66,7 +74,16 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         postAdapter = new PostAdapter(this, posts, currentUserId, this);
         recyclerView.setAdapter(postAdapter);
 
-        // Configurar TABS
+        // Icono de solicitudes
+        iconSolicitudes.setOnClickListener(v -> {
+            Intent intent = new Intent(FeedActivity.this, SolicitudesActivity.class);
+            startActivity(intent);
+        });
+
+        // Cargar lista de usuarios que sigo
+        loadFollowingList();
+        loadSolicitudesCount();
+
         tabParaTi.setOnClickListener(v -> {
             setTabSelected(tabParaTi);
             currentFilter = "parati";
@@ -79,7 +96,6 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
             loadPosts();
         });
 
-        // Bottom Navigation
         navHome.setOnClickListener(v -> {
             recyclerView.smoothScrollToPosition(0);
         });
@@ -104,6 +120,19 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         loadPosts();
     }
 
+    private void loadSolicitudesCount() {
+        new LoadSolicitudesCountTask().execute();
+    }
+
+    private void updateBadge(TextView badge, int count) {
+        if (count > 0) {
+            badge.setText(String.valueOf(count));
+            badge.setVisibility(View.VISIBLE);
+        } else {
+            badge.setVisibility(View.GONE);
+        }
+    }
+
     private void setTabSelected(TextView selectedTab) {
         tabParaTi.setTextColor(getColor(R.color.gray_text));
         tabSiguiendo.setTextColor(getColor(R.color.gray_text));
@@ -116,11 +145,24 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        loadFollowingList();
+        loadSolicitudesCount();
+        loadPosts();
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 100 && resultCode == RESULT_OK) {
+            loadFollowingList();
             loadPosts();
         }
+    }
+
+    private void loadFollowingList() {
+        new LoadFollowingTask().execute();
     }
 
     private void loadPosts() {
@@ -165,6 +207,84 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         conn.setRequestProperty("Authorization", "Basic " + new String(encoded));
     }
 
+    private class LoadSolicitudesCountTask extends AsyncTask<Void, Void, Integer> {
+        @Override
+        protected Integer doInBackground(Void... voids) {
+            int count = 0;
+            try {
+                String urlStr = Configuracion.SERVIDOR + "/db_solicitudes/_design/solicitudes/_view/pendientes?key=\"" + currentUserId + "\"";
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                setBasicAuth(conn);
+                conn.setRequestMethod("GET");
+
+                if (conn.getResponseCode() == 200) {
+                    InputStream in = conn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject response = new JSONObject(sb.toString());
+                    JSONArray rows = response.optJSONArray("rows");
+                    if (rows != null) {
+                        count = rows.length();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return count;
+        }
+
+        @Override
+        protected void onPostExecute(Integer count) {
+            updateBadge(badgeSolicitudes, count);
+        }
+    }
+
+    private class LoadFollowingTask extends AsyncTask<Void, Void, Set<String>> {
+        @Override
+        protected Set<String> doInBackground(Void... voids) {
+            Set<String> following = new HashSet<>();
+            try {
+                String urlStr = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + currentUserId + "\"";
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                setBasicAuth(conn);
+                conn.setRequestMethod("GET");
+
+                if (conn.getResponseCode() == 200) {
+                    InputStream in = conn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+
+                    JSONObject response = new JSONObject(sb.toString());
+                    JSONArray rows = response.optJSONArray("rows");
+
+                    if (rows != null) {
+                        for (int i = 0; i < rows.length(); i++) {
+                            JSONObject row = rows.getJSONObject(i);
+                            String followingId = row.optString("value");
+                            following.add(followingId);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return following;
+        }
+
+        @Override
+        protected void onPostExecute(Set<String> result) {
+            if (result != null) {
+                followingIds = result;
+            }
+        }
+    }
+
     private class LoadPostsTask extends AsyncTask<Void, Void, List<Post>> {
         private String errorMsg = "";
 
@@ -177,15 +297,7 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         protected List<Post> doInBackground(Void... voids) {
             List<Post> postList = new ArrayList<>();
             try {
-                String urlStr;
-                if (currentFilter.equals("siguiendo")) {
-                    // TODO: Implementar lógica de seguidos
-                    // Por ahora carga todas
-                    urlStr = Configuracion.SERVIDOR + "/db_publicaciones/_design/publicaciones/_view/por_fecha?descending=true";
-                } else {
-                    urlStr = Configuracion.SERVIDOR + "/db_publicaciones/_design/publicaciones/_view/por_fecha?descending=true";
-                }
-
+                String urlStr = Configuracion.SERVIDOR + "/db_publicaciones/_design/publicaciones/_view/por_fecha?descending=true";
                 URL url = new URL(urlStr);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 setBasicAuth(conn);
@@ -193,8 +305,7 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 conn.setConnectTimeout(15000);
                 conn.setReadTimeout(15000);
 
-                int responseCode = conn.getResponseCode();
-                if (responseCode == 200) {
+                if (conn.getResponseCode() == 200) {
                     InputStream in = conn.getInputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(in));
                     StringBuilder sb = new StringBuilder();
@@ -210,11 +321,18 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                             JSONObject doc = row.getJSONObject("value");
                             String docId = doc.getString("_id");
                             Post post = Post.fromJSON(doc, docId);
-                            postList.add(post);
+
+                            if (currentFilter.equals("siguiendo")) {
+                                if (followingIds.contains(post.getUserId())) {
+                                    postList.add(post);
+                                }
+                            } else {
+                                postList.add(post);
+                            }
                         }
                     }
                 } else {
-                    errorMsg = "Error HTTP: " + responseCode;
+                    errorMsg = "Error HTTP: " + conn.getResponseCode();
                 }
             } catch (Exception e) {
                 errorMsg = e.getMessage();
@@ -230,7 +348,14 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 posts.clear();
                 posts.addAll(result);
                 postAdapter.notifyDataSetChanged();
-            } else if (!errorMsg.isEmpty()) {
+            } else {
+                posts.clear();
+                postAdapter.notifyDataSetChanged();
+                if (currentFilter.equals("siguiendo") && followingIds.isEmpty()) {
+                    Toast.makeText(FeedActivity.this, "No sigues a nadie. Sigue usuarios para ver sus publicaciones.", Toast.LENGTH_LONG).show();
+                }
+            }
+            if (!errorMsg.isEmpty()) {
                 Toast.makeText(FeedActivity.this, "Error: " + errorMsg, Toast.LENGTH_SHORT).show();
             }
         }
@@ -253,9 +378,8 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 setBasicAuth(getConn);
                 getConn.setRequestMethod("GET");
 
-                int getCode = getConn.getResponseCode();
-                if (getCode != 200) {
-                    errorMsg = "Error al obtener publicación: " + getCode;
+                if (getConn.getResponseCode() != 200) {
+                    errorMsg = "Error al obtener publicación";
                     return false;
                 }
 
@@ -271,8 +395,8 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 if (likedByArray == null) likedByArray = new JSONArray();
 
                 int currentLikes = doc.optInt("likes", 0);
-
                 boolean yaDioLike = false;
+
                 for (int i = 0; i < likedByArray.length(); i++) {
                     if (likedByArray.getString(i).equals(currentUserId)) {
                         yaDioLike = true;
@@ -300,7 +424,6 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 }
 
                 String rev = doc.getString("_rev");
-
                 String putUrl = Configuracion.SERVIDOR + "/db_publicaciones/" + post.getId() + "?rev=" + rev;
                 URL putUrlObj = new URL(putUrl);
                 HttpURLConnection putConn = (HttpURLConnection) putUrlObj.openConnection();
@@ -321,7 +444,6 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
 
             } catch (Exception e) {
                 errorMsg = e.getMessage();
-                e.printStackTrace();
                 return false;
             }
         }
@@ -353,9 +475,8 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 setBasicAuth(getConn);
                 getConn.setRequestMethod("GET");
 
-                int getCode = getConn.getResponseCode();
-                if (getCode != 200) {
-                    errorMsg = "Error al obtener publicación: " + getCode;
+                if (getConn.getResponseCode() != 200) {
+                    errorMsg = "Error al obtener publicación";
                     return false;
                 }
 
@@ -367,15 +488,14 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 String docJson = sb.toString();
 
                 JSONObject doc = new JSONObject(docJson);
-
                 JSONArray commentsArray = new JSONArray();
+
                 for (Comment c : post.getComments()) {
                     commentsArray.put(c.toJSON());
                 }
                 doc.put("comments", commentsArray);
 
                 String rev = doc.getString("_rev");
-
                 String putUrl = Configuracion.SERVIDOR + "/db_publicaciones/" + post.getId() + "?rev=" + rev;
                 URL putUrlObj = new URL(putUrl);
                 HttpURLConnection putConn = (HttpURLConnection) putUrlObj.openConnection();
@@ -396,7 +516,6 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
 
             } catch (Exception e) {
                 errorMsg = e.getMessage();
-                e.printStackTrace();
                 return false;
             }
         }
@@ -405,7 +524,6 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         protected void onPostExecute(Boolean success) {
             if (success) {
                 postAdapter.updatePost(position, post);
-                Toast.makeText(FeedActivity.this, "Actualizado", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(FeedActivity.this, "Error: " + errorMsg, Toast.LENGTH_LONG).show();
             }
