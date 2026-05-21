@@ -6,7 +6,6 @@
     android:orientation="vertical"
     android:background="#F5F5F5">
 
-    <!-- Toolbar con botón de retroceso -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
@@ -55,7 +54,6 @@
                     android:padding="8dp" />
             </FrameLayout>
 
-            <!-- Campo nombre -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -74,7 +72,6 @@
                 android:paddingEnd="16dp"
                 android:layout_marginBottom="20dp" />
 
-            <!-- Campo ubicación -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -93,7 +90,6 @@
                 android:paddingEnd="16dp"
                 android:layout_marginBottom="28dp" />
 
-            <!-- Botón guardar -->
             <Button
                 android:id="@+id/btnGuardar"
                 android:layout_width="match_parent"

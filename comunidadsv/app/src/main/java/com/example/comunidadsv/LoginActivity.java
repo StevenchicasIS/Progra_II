@@ -104,11 +104,14 @@ public class LoginActivity extends AppCompatActivity {
         private String nombreUsuario = "";
         private String ubicacionUsuario = "";
         private String userId = "";
+        private String userEmail = "";  // Guardar email
 
         @Override
         protected Boolean doInBackground(String... params) {
             String correo = params[0];
             String passwordHash = sha256(params[1]);
+            userEmail = correo;  // Guardar email
+
             try {
                 String encodedCorreo = URLEncoder.encode("\"" + correo + "\"", "UTF-8");
                 String urlStr = Configuracion.SERVIDOR + "/db_usuarios/_design/usuarios/_view/por_correo?key=" + encodedCorreo;
@@ -133,7 +136,7 @@ public class LoginActivity extends AppCompatActivity {
                         String storedPass = usuario.getString("password");
                         if (storedPass.equals(passwordHash)) {
                             nombreUsuario = usuario.getString("nombre");
-                            userId = usuario.getString("_id");  // Guardamos el ID del documento
+                            userId = usuario.getString("_id");
                             if (usuario.has("ubicacion") && !usuario.isNull("ubicacion")) {
                                 ubicacionUsuario = usuario.getString("ubicacion");
                             } else {
@@ -166,7 +169,8 @@ public class LoginActivity extends AppCompatActivity {
                 editor.putBoolean("logueado", true);
                 editor.putString("nombre", nombreUsuario);
                 editor.putString("ubicacion", ubicacionUsuario);
-                editor.putString("userId", userId);  // Guardamos el ID
+                editor.putString("userId", userId);
+                editor.putString("email", userEmail);  // Guardar email del usuario
                 editor.apply();
 
                 Toast.makeText(LoginActivity.this, "¡Bienvenido " + nombreUsuario + "!", Toast.LENGTH_LONG).show();

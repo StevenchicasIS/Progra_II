@@ -1,12 +1,15 @@
 package com.example.comunidadsv;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
@@ -20,11 +23,12 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.google.android.material.imageview.ShapeableImageView;
 import org.json.JSONObject;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -41,6 +45,8 @@ public class EditProfileActivity extends AppCompatActivity {
     private String userId;
     private Uri selectedImageUri = null;
     private Bitmap selectedBitmap = null;
+    private String imagenBase64 = "";
+    private static final int REQUEST_PERMISSION_CODE = 100;
 
     private final ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -50,6 +56,7 @@ public class EditProfileActivity extends AppCompatActivity {
                     try {
                         selectedBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedImageUri);
                         imgProfile.setImageBitmap(selectedBitmap);
+                        imagenBase64 = bitmapToBase64(selectedBitmap);
                     } catch (Exception e) {
                         e.printStackTrace();
                         Toast.makeText(this, "Error al cargar imagen", Toast.LENGTH_SHORT).show();
@@ -88,19 +95,87 @@ public class EditProfileActivity extends AppCompatActivity {
         edtUbicacion.setText(currentLocation);
 
         // Cargar foto guardada
-        File photoFile = new File(getFilesDir(), "profile_" + userId + ".jpg");
-        if (photoFile.exists()) {
-            Bitmap bitmap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
-            if (bitmap != null) imgProfile.setImageBitmap(bitmap);
+        String fotoBase64 = prefs.getString("fotoPerfil", "");
+        if (!fotoBase64.isEmpty()) {
+            Bitmap bitmap = base64ToBitmap(fotoBase64);
+            if (bitmap != null) {
+                imgProfile.setImageBitmap(bitmap);
+                imagenBase64 = fotoBase64;
+            } else {
+                imgProfile.setImageResource(R.drawable.ic_profile);
+            }
+        } else {
+            imgProfile.setImageResource(R.drawable.ic_profile);
         }
 
-        btnChangePhoto.setOnClickListener(v -> openGallery());
+        btnChangePhoto.setOnClickListener(v -> checkPermissionAndOpenGallery());
         btnGuardar.setOnClickListener(v -> saveChanges());
+    }
+
+    private void checkPermissionAndOpenGallery() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_MEDIA_IMAGES},
+                        REQUEST_PERMISSION_CODE);
+            } else {
+                openGallery();
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        REQUEST_PERMISSION_CODE);
+            } else {
+                openGallery();
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                openGallery();
+            } else {
+                Toast.makeText(this, "Permiso denegado. No puedes cambiar la foto.", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         galleryLauncher.launch(intent);
+    }
+
+    private String bitmapToBase64(Bitmap bitmap) {
+        int maxWidth = 500;
+        int maxHeight = 500;
+        if (bitmap.getWidth() > maxWidth || bitmap.getHeight() > maxHeight) {
+            float ratio = Math.min((float) maxWidth / bitmap.getWidth(),
+                    (float) maxHeight / bitmap.getHeight());
+            int newWidth = Math.round(bitmap.getWidth() * ratio);
+            int newHeight = Math.round(bitmap.getHeight() * ratio);
+            bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+        byte[] imageBytes = baos.toByteArray();
+        return android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT);
+    }
+
+    private Bitmap base64ToBitmap(String base64String) {
+        try {
+            byte[] decodedString = android.util.Base64.decode(base64String, android.util.Base64.DEFAULT);
+            return BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private void saveChanges() {
@@ -118,20 +193,7 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
-        if (selectedBitmap != null) {
-            try {
-                File photoFile = new File(getFilesDir(), "profile_" + userId + ".jpg");
-                FileOutputStream fos = new FileOutputStream(photoFile);
-                selectedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, fos);
-                fos.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-                Toast.makeText(this, "Error al guardar la foto", Toast.LENGTH_SHORT).show();
-                return;
-            }
-        }
-
-        new UpdateProfileTask().execute(newNombre, newUbicacion);
+        new UpdateProfileTask().execute(newNombre, newUbicacion, imagenBase64);
     }
 
     private void setBasicAuth(HttpURLConnection conn) {
@@ -142,6 +204,9 @@ public class EditProfileActivity extends AppCompatActivity {
 
     private class UpdateProfileTask extends AsyncTask<String, Void, Boolean> {
         private String errorMsg = "";
+        private String newNombre;
+        private String newUbicacion;
+        private String newFotoBase64;
 
         @Override
         protected void onPreExecute() {
@@ -151,8 +216,9 @@ public class EditProfileActivity extends AppCompatActivity {
 
         @Override
         protected Boolean doInBackground(String... params) {
-            String nombre = params[0];
-            String ubicacion = params[1];
+            newNombre = params[0];
+            newUbicacion = params[1];
+            newFotoBase64 = params[2];
 
             try {
                 String getUrl = Configuracion.SERVIDOR + "/db_usuarios/" + userId;
@@ -174,8 +240,11 @@ public class EditProfileActivity extends AppCompatActivity {
                 while ((line = reader.readLine()) != null) sb.append(line);
                 JSONObject userDoc = new JSONObject(sb.toString());
 
-                userDoc.put("nombre", nombre);
-                userDoc.put("ubicacion", ubicacion);
+                userDoc.put("nombre", newNombre);
+                userDoc.put("ubicacion", newUbicacion);
+                if (!newFotoBase64.isEmpty()) {
+                    userDoc.put("fotoPerfil", newFotoBase64);
+                }
 
                 String putUrl = Configuracion.SERVIDOR + "/db_usuarios/" + userId;
                 HttpURLConnection putConn = (HttpURLConnection) new URL(putUrl).openConnection();
@@ -192,12 +261,8 @@ public class EditProfileActivity extends AppCompatActivity {
                 os.close();
 
                 int updateCode = putConn.getResponseCode();
-                if (updateCode == 201 || updateCode == 202) {
-                    return true;
-                } else {
-                    errorMsg = "Error al actualizar: " + updateCode;
-                    return false;
-                }
+                return updateCode == 201 || updateCode == 202;
+
             } catch (Exception e) {
                 errorMsg = e.getMessage();
                 return false;
@@ -208,14 +273,25 @@ public class EditProfileActivity extends AppCompatActivity {
         protected void onPostExecute(Boolean success) {
             progressBar.setVisibility(View.GONE);
             btnGuardar.setEnabled(true);
+
             if (success) {
+                // Actualizar SharedPreferences con los nuevos datos
                 SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
                 SharedPreferences.Editor editor = prefs.edit();
-                editor.putString("nombre", edtNombre.getText().toString().trim());
-                editor.putString("ubicacion", edtUbicacion.getText().toString().trim());
+                editor.putString("nombre", newNombre);
+                editor.putString("ubicacion", newUbicacion);
+                if (!newFotoBase64.isEmpty()) {
+                    editor.putString("fotoPerfil", newFotoBase64);
+                }
                 editor.apply();
 
                 Toast.makeText(EditProfileActivity.this, "Perfil actualizado correctamente", Toast.LENGTH_SHORT).show();
+
+                // Enviar resultado para que otras actividades se actualicen
+                Intent resultIntent = new Intent();
+                resultIntent.putExtra("perfil_actualizado", true);
+                setResult(RESULT_OK, resultIntent);
+
                 finish();
             } else {
                 Toast.makeText(EditProfileActivity.this, "Error: " + errorMsg, Toast.LENGTH_SHORT).show();
