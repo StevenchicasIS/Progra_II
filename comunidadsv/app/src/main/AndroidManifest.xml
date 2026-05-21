@@ -2,10 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- PERMISOS -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
         android:allowBackup="true"
@@ -16,24 +19,32 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
-        <activity android:name=".FeedActivity"/>
-        <activity android:name=".RegisterActivity"/>
-        <activity android:name=".LoginActivity"/>
-        <activity android:name=".WelcomeActivity"/>
-        <activity android:name=".ForgotPasswordActivity" />
-        <activity android:name=".ResetPasswordActivity" />
-        <activity android:name=".ProfileActivity" />
-        <activity android:name=".EditProfileActivity" />
-        <activity android:name=".ProfileActivity" />
+        <!-- API Key de Google Maps -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyC8aIc3c0XOiatvnT_Nsy1nhRYWiv2vKalo" />
 
-        <activity
-            android:name=".SplashActivity"
+        <!-- Pantallas de autenticación -->
+        <activity android:name=".SplashActivity"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".WelcomeActivity" />
+        <activity android:name=".LoginActivity" />
+        <activity android:name=".RegisterActivity" />
+        <activity android:name=".ForgotPasswordActivity" />
+        <activity android:name=".ResetPasswordActivity" />
+
+        <!-- Pantallas principales -->
+        <activity android:name=".FeedActivity" />
+        <activity android:name=".ProfileActivity" />
+        <activity android:name=".EditProfileActivity" />
+        <activity android:name=".CreatePostActivity" />
+        <activity android:name=".MapsActivity" />
 
     </application>
 

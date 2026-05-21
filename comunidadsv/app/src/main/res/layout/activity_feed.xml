@@ -10,7 +10,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- HEADER con logo y nombre de usuario -->
+        <!-- HEADER con logo -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="70dp"
@@ -44,7 +44,7 @@
 
         </LinearLayout>
 
-        <!-- TABS: Para ti | Cercanos | Siguiendo -->
+        <!-- TABS: Para ti | Siguiendo -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -71,23 +71,6 @@
                 android:background="#E0E0E0" />
 
             <TextView
-                android:id="@+id/tabCercanos"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="Cercanos"
-                android:textSize="15sp"
-                android:textColor="#666666"
-                android:gravity="center"
-                android:background="?attr/selectableItemBackground" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="30dp"
-                android:layout_gravity="center_vertical"
-                android:background="#E0E0E0" />
-
-            <TextView
                 android:id="@+id/tabSiguiendo"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
@@ -100,378 +83,23 @@
 
         </LinearLayout>
 
-        <!-- FEED (Lista de publicaciones) - CON MUCHO MARGEN INFERIOR -->
-        <ScrollView
+        <!-- RECYCLERVIEW -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:scrollbars="vertical">
-
-            <LinearLayout
-                android:id="@+id/feedContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp"
-                android:paddingBottom="120dp">
-
-                <!-- Publicación 1 - Tráfico -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:background="#FFFFFF"
-                    android:elevation="2dp"
-                    android:layout_marginBottom="12dp"
-                    android:padding="12dp">
-
-                    <!-- Header del post -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="50dp"
-                            android:layout_height="50dp"
-                            android:src="@drawable/ic_profile"
-                            android:background="@drawable/circle_bg"
-                            android:padding="8dp" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:layout_marginStart="12dp">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Luis Hernandez"
-                                android:textSize="16sp"
-                                android:textStyle="bold"
-                                android:textColor="#333333" />
-
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:layout_marginTop="4dp">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Usulutan Centro"
-                                    android:textSize="12sp"
-                                    android:textColor="#999999" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text=" • "
-                                    android:textSize="12sp"
-                                    android:textColor="#999999" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="20 min"
-                                    android:textSize="12sp"
-                                    android:textColor="#999999" />
-
-                            </LinearLayout>
-
-                        </LinearLayout>
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/ic_menu_dots"
-                            android:layout_gravity="top" />
-
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tráfico"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="#0A7A33"
-                        android:layout_marginTop="12dp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Tráfico lento sobre la carretera Litoral, debido a trabajos que realiza FOVIAL en sector del desvío Ojo de Agua, en Usulután."
-                        android:textSize="14sp"
-                        android:textColor="#555555"
-                        android:layout_marginTop="8dp"
-                        android:lineSpacingExtra="4dp" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginTop="16dp"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="8dp"
-                        android:gravity="center_vertical">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="horizontal"
-                            android:gravity="center">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_like"
-                                android:layout_marginEnd="6dp" />
-
-                            <TextView
-                                android:id="@+id/txtLikes1"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="44"
-                                android:textSize="14sp"
-                                android:textColor="#666666" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="horizontal"
-                            android:gravity="center">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_comment"
-                                android:layout_marginEnd="6dp" />
-
-                            <TextView
-                                android:id="@+id/txtComments1"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="6"
-                                android:textSize="14sp"
-                                android:textColor="#666666" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="horizontal"
-                            android:gravity="center">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_share"
-                                android:layout_marginEnd="6dp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Compartir"
-                                android:textSize="14sp"
-                                android:textColor="#666666" />
-
-                        </LinearLayout>
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-                <!-- Publicación 2 - Ayuda -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:background="#FFFFFF"
-                    android:elevation="2dp"
-                    android:padding="12dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="50dp"
-                            android:layout_height="50dp"
-                            android:src="@drawable/ic_profile"
-                            android:background="@drawable/circle_bg"
-                            android:padding="8dp" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:layout_marginStart="12dp">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Maria Flores"
-                                android:textSize="16sp"
-                                android:textStyle="bold"
-                                android:textColor="#333333" />
-
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:layout_marginTop="4dp">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Barr. El Calvario"
-                                    android:textSize="12sp"
-                                    android:textColor="#999999" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text=" • "
-                                    android:textSize="12sp"
-                                    android:textColor="#999999" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="1 min"
-                                    android:textSize="12sp"
-                                    android:textColor="#999999" />
-
-                            </LinearLayout>
-
-                        </LinearLayout>
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/ic_menu_dots" />
-
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Ayuda"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="#0A7A33"
-                        android:layout_marginTop="12dp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="¿Alguien que me pueda recomendar un buen plomero? Gracias"
-                        android:textSize="14sp"
-                        android:textColor="#555555"
-                        android:layout_marginTop="8dp"
-                        android:lineSpacingExtra="4dp" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginTop="16dp"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="8dp"
-                        android:gravity="center_vertical">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="horizontal"
-                            android:gravity="center">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_like" />
-
-                            <TextView
-                                android:id="@+id/txtLikes2"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="9"
-                                android:textSize="14sp"
-                                android:textColor="#666666"
-                                android:layout_marginStart="6dp" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="horizontal"
-                            android:gravity="center">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_comment" />
-
-                            <TextView
-                                android:id="@+id/txtComments2"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="1"
-                                android:textSize="14sp"
-                                android:textColor="#666666"
-                                android:layout_marginStart="6dp" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="horizontal"
-                            android:gravity="center">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_share" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Compartir"
-                                android:textSize="14sp"
-                                android:textColor="#666666"
-                                android:layout_marginStart="6dp" />
-
-                        </LinearLayout>
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-                <!-- ESPACIO EXTRA AL FINAL (visible en el scroll) -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="80dp" />
-
-            </LinearLayout>
-
-        </ScrollView>
+            android:padding="8dp"
+            android:clipToPadding="false"
+            android:scrollbars="vertical" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:indeterminateTint="#0A7A33" />
 
         <!-- BOTTOM NAVIGATION -->
         <LinearLayout
