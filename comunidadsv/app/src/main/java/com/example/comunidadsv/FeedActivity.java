@@ -74,13 +74,11 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         postAdapter = new PostAdapter(this, posts, currentUserId, this);
         recyclerView.setAdapter(postAdapter);
 
-        // Icono de solicitudes
         iconSolicitudes.setOnClickListener(v -> {
             Intent intent = new Intent(FeedActivity.this, SolicitudesActivity.class);
             startActivity(intent);
         });
 
-        // Cargar lista de usuarios que sigo
         loadFollowingList();
         loadSolicitudesCount();
 
@@ -101,15 +99,24 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         });
 
         navMap.setOnClickListener(v -> {
-            Toast.makeText(this, "Próximamente: Mapa", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(FeedActivity.this, MapsActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
         });
 
         navChat.setOnClickListener(v -> {
-            Toast.makeText(this, "Próximamente: Chat", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(FeedActivity.this, ChatsActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
         });
 
         navProfile.setOnClickListener(v -> {
-            startActivity(new Intent(FeedActivity.this, ProfileActivity.class));
+            Intent intent = new Intent(FeedActivity.this, ProfileActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
         });
 
         fabAddPost.setOnClickListener(v -> {

@@ -1,7 +1,6 @@
 package com.example.comunidadsv;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.view.LayoutInflater;
@@ -15,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -93,6 +93,115 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
         conn.setRequestProperty("Authorization", "Basic " + new String(encoded));
     }
 
+    private String obtenerFotoUsuario(String userId) {
+        try {
+            String urlStr = Configuracion.SERVIDOR + "/db_usuarios/" + userId;
+            URL url = new URL(urlStr);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            setBasicAuth(conn);
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+
+            if (conn.getResponseCode() == 200) {
+                InputStream in = conn.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                JSONObject user = new JSONObject(sb.toString());
+                return user.optString("fotoPerfil", "");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    private String obtenerNombreUsuario(String userId) {
+        try {
+            String urlStr = Configuracion.SERVIDOR + "/db_usuarios/" + userId;
+            URL url = new URL(urlStr);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            setBasicAuth(conn);
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+
+            if (conn.getResponseCode() == 200) {
+                InputStream in = conn.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                JSONObject user = new JSONObject(sb.toString());
+                return user.optString("nombre", "Usuario");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "Usuario";
+    }
+
+    private void crearChat(String usuario1Id, String usuario2Id,
+                           String usuario1Nombre, String usuario2Nombre,
+                           String usuario1Foto, String usuario2Foto) {
+        try {
+            // Verificar si ya existe un chat entre estos usuarios
+            String checkUrl = Configuracion.SERVIDOR + "/db_chats/_design/chats/_view/entre_usuarios?startkey=[\"" + usuario1Id + "\",\"" + usuario2Id + "\"]&endkey=[\"" + usuario2Id + "\",\"" + usuario1Id + "\"]";
+            URL checkUrlObj = new URL(checkUrl);
+            HttpURLConnection checkConn = (HttpURLConnection) checkUrlObj.openConnection();
+            setBasicAuth(checkConn);
+            checkConn.setRequestMethod("GET");
+            checkConn.setConnectTimeout(10000);
+            checkConn.setReadTimeout(10000);
+
+            if (checkConn.getResponseCode() == 200) {
+                InputStream in = checkConn.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                JSONObject response = new JSONObject(sb.toString());
+                JSONArray rows = response.optJSONArray("rows");
+
+                if (rows != null && rows.length() > 0) {
+                    // Ya existe un chat, no crear otro
+                    return;
+                }
+            }
+
+            // Crear nuevo chat
+            Chat chat = new Chat(usuario1Id, usuario1Nombre, usuario1Foto,
+                    usuario2Id, usuario2Nombre, usuario2Foto);
+
+            String putUrl = Configuracion.SERVIDOR + "/db_chats/" + chat.getId();
+            URL putUrlObj = new URL(putUrl);
+            HttpURLConnection putConn = (HttpURLConnection) putUrlObj.openConnection();
+            setBasicAuth(putConn);
+            putConn.setRequestMethod("PUT");
+            putConn.setRequestProperty("Content-Type", "application/json");
+            putConn.setDoOutput(true);
+            putConn.setConnectTimeout(10000);
+            putConn.setReadTimeout(10000);
+
+            OutputStream os = putConn.getOutputStream();
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+            writer.write(chat.toJSON().toString());
+            writer.flush();
+            writer.close();
+            os.close();
+
+            int responseCode = putConn.getResponseCode();
+            if (responseCode == 201 || responseCode == 202) {
+                android.util.Log.d("SolicitudAdapter", "Chat creado exitosamente: " + chat.getId());
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private class ResponderSolicitudTask extends AsyncTask<Void, Void, Boolean> {
         private boolean aceptar;
         private Solicitud solicitud;
@@ -114,11 +223,13 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
                 HttpURLConnection getConn = (HttpURLConnection) getUrlObj.openConnection();
                 setBasicAuth(getConn);
                 getConn.setRequestMethod("GET");
+                getConn.setConnectTimeout(10000);
+                getConn.setReadTimeout(10000);
 
                 String rev = "";
                 if (getConn.getResponseCode() == 200) {
                     InputStream in = getConn.getInputStream();
-                    java.io.BufferedReader reader = new java.io.BufferedReader(new InputStreamReader(in));
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
                     StringBuilder sb = new StringBuilder();
                     String line;
                     while ((line = reader.readLine()) != null) sb.append(line);
@@ -134,6 +245,8 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
                 conn.setRequestMethod("PUT");
                 conn.setRequestProperty("Content-Type", "application/json");
                 conn.setDoOutput(true);
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
 
                 JSONObject doc = new JSONObject();
                 doc.put("_id", solicitud.getId());
@@ -156,11 +269,9 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
                 int responseCode = conn.getResponseCode();
                 boolean success = responseCode == 201 || responseCode == 202;
 
-                // Si se aceptó, crear la relación de seguimiento
+                // Si se aceptó, crear la relación de seguimiento Y el chat
                 if (aceptar && success) {
-                    // RELACIÓN CORREGIDA:
-                    // El receptor (currentUserId) ahora SIGUE al emisor
-                    // Es decir: receptor sigue a emisor
+                    // 1. Crear relación de seguimiento
                     Follow follow = new Follow(solicitud.getReceptorId(), solicitud.getEmisorId());
                     String followUrl = Configuracion.SERVIDOR + "/db_seguidores/" + follow.getId();
                     URL followUrlObj = new URL(followUrl);
@@ -169,6 +280,8 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
                     followConn.setRequestMethod("PUT");
                     followConn.setRequestProperty("Content-Type", "application/json");
                     followConn.setDoOutput(true);
+                    followConn.setConnectTimeout(10000);
+                    followConn.setReadTimeout(10000);
 
                     OutputStream os2 = followConn.getOutputStream();
                     BufferedWriter writer2 = new BufferedWriter(new OutputStreamWriter(os2, "UTF-8"));
@@ -177,7 +290,22 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
                     writer2.close();
                     os2.close();
 
-                    followConn.getResponseCode();
+                    int followResponse = followConn.getResponseCode();
+                    boolean followSuccess = followResponse == 201 || followResponse == 202;
+
+                    // 2. Crear chat automáticamente
+                    if (followSuccess) {
+                        // Obtener fotos actualizadas de ambos usuarios
+                        String receptorFoto = obtenerFotoUsuario(solicitud.getReceptorId());
+                        String emisorFoto = obtenerFotoUsuario(solicitud.getEmisorId());
+                        String receptorNombre = obtenerNombreUsuario(solicitud.getReceptorId());
+                        String emisorNombre = obtenerNombreUsuario(solicitud.getEmisorId());
+
+                        // Crear el chat (receptor - emisor)
+                        crearChat(solicitud.getReceptorId(), solicitud.getEmisorId(),
+                                receptorNombre, emisorNombre,
+                                receptorFoto, emisorFoto);
+                    }
                 }
 
                 return success;

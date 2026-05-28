@@ -47,6 +47,10 @@
         <activity android:name=".MapsActivity" />
         <activity android:name=".SolicitudesActivity" />
 
+        <!-- Pantallas de Chat -->
+        <activity android:name=".ChatsActivity" />
+        <activity android:name=".ChatDetailActivity" />
+
     </application>
 
 </manifest>
