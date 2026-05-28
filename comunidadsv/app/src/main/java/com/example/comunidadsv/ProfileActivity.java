@@ -21,7 +21,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -87,7 +86,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
 
         isOwnProfile = userId.equals(currentUserId);
 
-        // Configurar visibilidad de botones
         if (isOwnProfile) {
             btnEditarPerfil.setVisibility(View.VISIBLE);
             btnSeguir.setVisibility(View.GONE);
@@ -134,19 +132,26 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         });
 
         navMap.setOnClickListener(v -> {
-            Toast.makeText(this, "Próximamente: Mapa", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(ProfileActivity.this, MapsActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
         });
 
         navChat.setOnClickListener(v -> {
             Toast.makeText(this, "Próximamente: Chat", Toast.LENGTH_SHORT).show();
         });
 
+        // CORREGIDO: No cerrar la actividad al hacer clic en Perfil
         navProfile.setOnClickListener(v -> {
-            // Recargar datos
+            // Solo recargar los datos, no cerrar la actividad
             loadUserData();
             loadUserPosts();
             loadFollowersCount();
             loadFollowingCount();
+            if (!isOwnProfile) {
+                checkIfFollowing();
+            }
         });
     }
 
@@ -229,8 +234,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
     private void dejarDeSeguir() {
         new UnfollowTask().execute();
     }
-
-    // ========== IMPLEMENTACIÓN DE OnPostActionListener ==========
 
     @Override
     public void onLikeClicked(Post post, int position) {
@@ -486,7 +489,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         @Override
         protected Boolean doInBackground(Void... voids) {
             try {
-                // Buscar el follow existente
                 String searchUrl = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + currentUserId + "\"";
                 URL searchUrlObj = new URL(searchUrl);
                 HttpURLConnection searchConn = (HttpURLConnection) searchUrlObj.openConnection();
@@ -508,7 +510,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                             String followingId = row.optString("value");
                             if (followingId.equals(userId)) {
                                 String docId = row.optString("id");
-                                // Eliminar el follow
                                 String deleteUrl = Configuracion.SERVIDOR + "/db_seguidores/" + docId;
                                 URL deleteUrlObj = new URL(deleteUrl);
                                 HttpURLConnection deleteConn = (HttpURLConnection) deleteUrlObj.openConnection();

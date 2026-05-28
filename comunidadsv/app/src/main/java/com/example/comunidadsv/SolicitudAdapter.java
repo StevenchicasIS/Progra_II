@@ -59,7 +59,6 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
         holder.txtNombre.setText(s.getEmisorNombre());
         holder.txtMensaje.setText("Quiere seguirte");
 
-        // Cargar foto si existe
         if (s.getEmisorFoto() != null && !s.getEmisorFoto().isEmpty()) {
             Bitmap bitmap = ImageUtils.base64ToBitmap(s.getEmisorFoto());
             if (bitmap != null) {
@@ -159,53 +158,26 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
 
                 // Si se aceptó, crear la relación de seguimiento
                 if (aceptar && success) {
-                    // Verificar si ya existe la relación
-                    String checkUrl = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + solicitud.getReceptorId() + "\"";
-                    URL checkUrlObj = new URL(checkUrl);
-                    HttpURLConnection checkConn = (HttpURLConnection) checkUrlObj.openConnection();
-                    setBasicAuth(checkConn);
-                    checkConn.setRequestMethod("GET");
+                    // RELACIÓN CORREGIDA:
+                    // El receptor (currentUserId) ahora SIGUE al emisor
+                    // Es decir: receptor sigue a emisor
+                    Follow follow = new Follow(solicitud.getReceptorId(), solicitud.getEmisorId());
+                    String followUrl = Configuracion.SERVIDOR + "/db_seguidores/" + follow.getId();
+                    URL followUrlObj = new URL(followUrl);
+                    HttpURLConnection followConn = (HttpURLConnection) followUrlObj.openConnection();
+                    setBasicAuth(followConn);
+                    followConn.setRequestMethod("PUT");
+                    followConn.setRequestProperty("Content-Type", "application/json");
+                    followConn.setDoOutput(true);
 
-                    boolean yaExiste = false;
-                    if (checkConn.getResponseCode() == 200) {
-                        InputStream in = checkConn.getInputStream();
-                        java.io.BufferedReader reader = new java.io.BufferedReader(new InputStreamReader(in));
-                        StringBuilder sb = new StringBuilder();
-                        String line;
-                        while ((line = reader.readLine()) != null) sb.append(line);
-                        JSONObject response = new JSONObject(sb.toString());
-                        JSONArray rows = response.optJSONArray("rows");
-                        if (rows != null) {
-                            for (int i = 0; i < rows.length(); i++) {
-                                JSONObject row = rows.getJSONObject(i);
-                                String followingId = row.optString("value");
-                                if (followingId.equals(solicitud.getEmisorId())) {
-                                    yaExiste = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                    OutputStream os2 = followConn.getOutputStream();
+                    BufferedWriter writer2 = new BufferedWriter(new OutputStreamWriter(os2, "UTF-8"));
+                    writer2.write(follow.toJSON().toString());
+                    writer2.flush();
+                    writer2.close();
+                    os2.close();
 
-                    if (!yaExiste) {
-                        Follow follow = new Follow(solicitud.getReceptorId(), solicitud.getEmisorId());
-                        String followUrl = Configuracion.SERVIDOR + "/db_seguidores/" + follow.getId();
-                        URL followUrlObj = new URL(followUrl);
-                        HttpURLConnection followConn = (HttpURLConnection) followUrlObj.openConnection();
-                        setBasicAuth(followConn);
-                        followConn.setRequestMethod("PUT");
-                        followConn.setRequestProperty("Content-Type", "application/json");
-                        followConn.setDoOutput(true);
-
-                        OutputStream os2 = followConn.getOutputStream();
-                        BufferedWriter writer2 = new BufferedWriter(new OutputStreamWriter(os2, "UTF-8"));
-                        writer2.write(follow.toJSON().toString());
-                        writer2.flush();
-                        writer2.close();
-                        os2.close();
-
-                        followConn.getResponseCode();
-                    }
+                    followConn.getResponseCode();
                 }
 
                 return success;
@@ -224,7 +196,6 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
                 notifyItemRemoved(position);
                 Toast.makeText(context, aceptar ? "Solicitud aceptada" : "Solicitud rechazada", Toast.LENGTH_SHORT).show();
 
-                // Notificar al listener para actualizar el perfil
                 if (listener != null && aceptar) {
                     listener.onSolicitudAceptada();
                 }
