@@ -49,6 +49,7 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
     private String userId;
     private String currentUserId;
     private boolean isOwnProfile;
+    private String currentUserPhotoBase64 = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -142,9 +143,7 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
             Toast.makeText(this, "Próximamente: Chat", Toast.LENGTH_SHORT).show();
         });
 
-        // CORREGIDO: No cerrar la actividad al hacer clic en Perfil
         navProfile.setOnClickListener(v -> {
-            // Solo recargar los datos, no cerrar la actividad
             loadUserData();
             loadUserPosts();
             loadFollowersCount();
@@ -177,28 +176,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
     }
 
     private void loadUserData() {
-        if (isOwnProfile) {
-            SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
-            String nombre = prefs.getString("nombre", "Usuario");
-            String ubicacion = prefs.getString("ubicacion", "Sin ubicación");
-            String fotoBase64 = prefs.getString("fotoPerfil", "");
-
-            txtNombre.setText(nombre);
-            txtUbicacion.setText(ubicacion);
-
-            if (!fotoBase64.isEmpty()) {
-                Bitmap bitmap = base64ToBitmap(fotoBase64);
-                if (bitmap != null) {
-                    imgProfile.setImageBitmap(bitmap);
-                } else {
-                    imgProfile.setImageResource(R.drawable.ic_profile);
-                }
-            } else {
-                imgProfile.setImageResource(R.drawable.ic_profile);
-            }
-        } else {
-            new LoadUserDataTask().execute();
-        }
+        // CORREGIDO: Siempre cargar desde CouchDB, nunca desde SharedPreferences para la foto
+        new LoadUserDataTask().execute();
     }
 
     private Bitmap base64ToBitmap(String base64String) {
@@ -273,7 +252,7 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         conn.setRequestProperty("Authorization", "Basic " + new String(encoded));
     }
 
-    // ========== TAREAS ASINCRÓNICAS ==========
+    // ========== TAREAS ASINCRÓNICAS CORREGIDAS ==========
 
     private class LoadUserDataTask extends AsyncTask<Void, Void, String[]> {
         @Override
@@ -314,11 +293,22 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 Bitmap bitmap = base64ToBitmap(data[2]);
                 if (bitmap != null) {
                     imgProfile.setImageBitmap(bitmap);
+                    currentUserPhotoBase64 = data[2];
                 } else {
                     imgProfile.setImageResource(R.drawable.ic_profile);
                 }
             } else {
                 imgProfile.setImageResource(R.drawable.ic_profile);
+            }
+
+            // Si es mi perfil, actualizar SharedPreferences solo con nombre y ubicación
+            if (isOwnProfile) {
+                SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString("nombre", data[0]);
+                editor.putString("ubicacion", data[1]);
+                // NO guardar la foto en SharedPreferences
+                editor.apply();
             }
         }
     }
@@ -448,7 +438,24 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
             try {
                 SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
                 String emisorNombre = prefs.getString("nombre", "Usuario");
-                String emisorFoto = prefs.getString("fotoPerfil", "");
+
+                // CORREGIDO: Obtener la foto actual desde CouchDB
+                String emisorFoto = "";
+                String userUrl = Configuracion.SERVIDOR + "/db_usuarios/" + currentUserId;
+                URL userUrlObj = new URL(userUrl);
+                HttpURLConnection userConn = (HttpURLConnection) userUrlObj.openConnection();
+                setBasicAuth(userConn);
+                userConn.setRequestMethod("GET");
+
+                if (userConn.getResponseCode() == 200) {
+                    InputStream in = userConn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject user = new JSONObject(sb.toString());
+                    emisorFoto = user.optString("fotoPerfil", "");
+                }
 
                 Solicitud solicitud = new Solicitud(currentUserId, emisorNombre, emisorFoto, userId);
                 String putUrl = Configuracion.SERVIDOR + "/db_solicitudes/" + solicitud.getId();

@@ -30,8 +30,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
 
@@ -39,6 +41,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     private List<Post> posts;
     private String currentUserId;
     private OnPostActionListener listener;
+    private Map<String, String> userPhotoCache = new HashMap<>(); // Cache de fotos por userId
 
     public interface OnPostActionListener {
         void onLikeClicked(Post post, int position);
@@ -89,7 +92,9 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.txtContenido.setText(post.getContenido());
 
         setupImagenes(holder, post);
-        setupUserPhoto(holder, post);
+
+        // CORREGIDO: Cargar la foto del usuario que hizo la publicación, no la del usuario actual
+        loadUserPhoto(holder.imgUserPhoto, post.getUserId());
 
         holder.txtLikes.setText(String.valueOf(post.getLikes()));
         if (post.isLikedByUser(currentUserId)) {
@@ -133,19 +138,69 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         });
     }
 
-    private void setupUserPhoto(PostViewHolder holder, Post post) {
-        SharedPreferences prefs = context.getSharedPreferences("ComunidadSV", Context.MODE_PRIVATE);
-        String fotoBase64 = prefs.getString("fotoPerfil", "");
-
-        if (!fotoBase64.isEmpty()) {
-            Bitmap bitmap = ImageUtils.base64ToBitmap(fotoBase64);
-            if (bitmap != null) {
-                holder.imgUserPhoto.setImageBitmap(bitmap);
-            } else {
-                holder.imgUserPhoto.setImageResource(R.drawable.ic_profile);
+    // CORREGIDO: Método para cargar la foto de un usuario específico desde CouchDB
+    private void loadUserPhoto(ImageView imageView, String userId) {
+        // Primero verificar caché
+        if (userPhotoCache.containsKey(userId)) {
+            String fotoBase64 = userPhotoCache.get(userId);
+            if (!fotoBase64.isEmpty()) {
+                Bitmap bitmap = ImageUtils.base64ToBitmap(fotoBase64);
+                if (bitmap != null) {
+                    imageView.setImageBitmap(bitmap);
+                    return;
+                }
             }
-        } else {
-            holder.imgUserPhoto.setImageResource(R.drawable.ic_profile);
+            imageView.setImageResource(R.drawable.ic_profile);
+            return;
+        }
+
+        // Si no está en caché, cargar desde CouchDB
+        imageView.setImageResource(R.drawable.ic_profile); // Imagen temporal
+        new LoadUserPhotoTask(imageView, userId).execute();
+    }
+
+    private class LoadUserPhotoTask extends AsyncTask<Void, Void, String> {
+        private ImageView imageView;
+        private String userId;
+
+        LoadUserPhotoTask(ImageView imageView, String userId) {
+            this.imageView = imageView;
+            this.userId = userId;
+        }
+
+        @Override
+        protected String doInBackground(Void... voids) {
+            try {
+                String urlStr = Configuracion.SERVIDOR + "/db_usuarios/" + userId;
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                setBasicAuth(conn);
+                conn.setRequestMethod("GET");
+
+                if (conn.getResponseCode() == 200) {
+                    InputStream in = conn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject user = new JSONObject(sb.toString());
+                    return user.optString("fotoPerfil", "");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return "";
+        }
+
+        @Override
+        protected void onPostExecute(String fotoBase64) {
+            userPhotoCache.put(userId, fotoBase64);
+            if (!fotoBase64.isEmpty()) {
+                Bitmap bitmap = ImageUtils.base64ToBitmap(fotoBase64);
+                if (bitmap != null) {
+                    imageView.setImageBitmap(bitmap);
+                }
+            }
         }
     }
 
@@ -181,9 +236,50 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         SharedPreferences prefs = context.getSharedPreferences("ComunidadSV", Context.MODE_PRIVATE);
         String emisorId = prefs.getString("userId", "");
         String emisorNombre = prefs.getString("nombre", "Usuario");
-        String emisorFoto = prefs.getString("fotoPerfil", "");
 
-        new EnviarSolicitudTask().execute(emisorId, emisorNombre, emisorFoto, receptorId, receptorNombre);
+        // CORREGIDO: Obtener la foto actual del emisor desde CouchDB
+        new ObtenerFotoPerfilTask(emisorId, receptorId, receptorNombre).execute();
+    }
+
+    private class ObtenerFotoPerfilTask extends AsyncTask<Void, Void, String> {
+        private String emisorId;
+        private String receptorId;
+        private String receptorNombre;
+
+        ObtenerFotoPerfilTask(String emisorId, String receptorId, String receptorNombre) {
+            this.emisorId = emisorId;
+            this.receptorId = receptorId;
+            this.receptorNombre = receptorNombre;
+        }
+
+        @Override
+        protected String doInBackground(Void... voids) {
+            try {
+                String urlStr = Configuracion.SERVIDOR + "/db_usuarios/" + emisorId;
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                setBasicAuth(conn);
+                conn.setRequestMethod("GET");
+
+                if (conn.getResponseCode() == 200) {
+                    InputStream in = conn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject user = new JSONObject(sb.toString());
+                    return user.optString("fotoPerfil", "");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return "";
+        }
+
+        @Override
+        protected void onPostExecute(String emisorFoto) {
+            new EnviarSolicitudTask().execute(emisorId, receptorId, receptorNombre, emisorFoto);
+        }
     }
 
     private void setBasicAuth(HttpURLConnection conn) {
@@ -198,34 +294,12 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         @Override
         protected Boolean doInBackground(String... params) {
             String emisorId = params[0];
-            String emisorNombre = params[1];
-            String emisorFoto = params[2];
-            String receptorId = params[3];
+            String receptorId = params[1];
+            String receptorNombre = params[2];
+            String emisorFoto = params[3];
 
             try {
-                // Verificar si ya existe una solicitud pendiente
-                String checkUrl = Configuracion.SERVIDOR + "/db_solicitudes/_design/solicitudes/_view/pendientes?key=\"" + receptorId + "\"";
-                URL checkUrlObj = new URL(checkUrl);
-                HttpURLConnection checkConn = (HttpURLConnection) checkUrlObj.openConnection();
-                setBasicAuth(checkConn);
-                checkConn.setRequestMethod("GET");
-
-                if (checkConn.getResponseCode() == 200) {
-                    InputStream in = checkConn.getInputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) sb.append(line);
-                    JSONObject response = new JSONObject(sb.toString());
-                    // Si ya hay solicitud pendiente, no enviar otra
-                    if (response.optJSONArray("rows") != null && response.optJSONArray("rows").length() > 0) {
-                        errorMsg = "Ya tienes una solicitud pendiente para este usuario";
-                        return false;
-                    }
-                }
-
-                // Crear nueva solicitud
-                Solicitud solicitud = new Solicitud(emisorId, emisorNombre, emisorFoto, receptorId);
+                Solicitud solicitud = new Solicitud(emisorId, receptorNombre, emisorFoto, receptorId);
                 String putUrl = Configuracion.SERVIDOR + "/db_solicitudes/" + solicitud.getId();
                 URL putUrlObj = new URL(putUrl);
                 HttpURLConnection putConn = (HttpURLConnection) putUrlObj.openConnection();

@@ -28,7 +28,6 @@ import androidx.core.content.ContextCompat;
 import com.google.android.material.imageview.ShapeableImageView;
 import org.json.JSONObject;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -46,6 +45,7 @@ public class EditProfileActivity extends AppCompatActivity {
     private Uri selectedImageUri = null;
     private Bitmap selectedBitmap = null;
     private String imagenBase64 = "";
+    private String currentFotoPerfil = "";
     private static final int REQUEST_PERMISSION_CODE = 100;
 
     private final ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
@@ -94,22 +94,58 @@ public class EditProfileActivity extends AppCompatActivity {
         edtNombre.setText(currentName);
         edtUbicacion.setText(currentLocation);
 
-        // Cargar foto guardada
-        String fotoBase64 = prefs.getString("fotoPerfil", "");
-        if (!fotoBase64.isEmpty()) {
-            Bitmap bitmap = base64ToBitmap(fotoBase64);
-            if (bitmap != null) {
-                imgProfile.setImageBitmap(bitmap);
-                imagenBase64 = fotoBase64;
-            } else {
-                imgProfile.setImageResource(R.drawable.ic_profile);
-            }
-        } else {
-            imgProfile.setImageResource(R.drawable.ic_profile);
-        }
+        // CORREGIDO: Cargar foto desde CouchDB, no desde SharedPreferences
+        cargarFotoDesdeCouchDB();
 
         btnChangePhoto.setOnClickListener(v -> checkPermissionAndOpenGallery());
         btnGuardar.setOnClickListener(v -> saveChanges());
+    }
+
+    // CORREGIDO: Nuevo método para cargar foto desde CouchDB
+    private void cargarFotoDesdeCouchDB() {
+        new CargarFotoTask().execute();
+    }
+
+    private class CargarFotoTask extends AsyncTask<Void, Void, String> {
+        @Override
+        protected String doInBackground(Void... voids) {
+            try {
+                String urlStr = Configuracion.SERVIDOR + "/db_usuarios/" + userId;
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                setBasicAuth(conn);
+                conn.setRequestMethod("GET");
+
+                if (conn.getResponseCode() == 200) {
+                    InputStream in = conn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject user = new JSONObject(sb.toString());
+                    return user.optString("fotoPerfil", "");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return "";
+        }
+
+        @Override
+        protected void onPostExecute(String fotoBase64) {
+            currentFotoPerfil = fotoBase64;
+            if (!fotoBase64.isEmpty()) {
+                Bitmap bitmap = base64ToBitmap(fotoBase64);
+                if (bitmap != null) {
+                    imgProfile.setImageBitmap(bitmap);
+                    imagenBase64 = fotoBase64;
+                } else {
+                    imgProfile.setImageResource(R.drawable.ic_profile);
+                }
+            } else {
+                imgProfile.setImageResource(R.drawable.ic_profile);
+            }
+        }
     }
 
     private void checkPermissionAndOpenGallery() {
@@ -162,7 +198,7 @@ public class EditProfileActivity extends AppCompatActivity {
             bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
         }
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
         byte[] imageBytes = baos.toByteArray();
         return android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT);
@@ -275,19 +311,16 @@ public class EditProfileActivity extends AppCompatActivity {
             btnGuardar.setEnabled(true);
 
             if (success) {
-                // Actualizar SharedPreferences con los nuevos datos
+                // CORREGIDO: Actualizar SharedPreferences solo con nombre y ubicación, NO con la foto
                 SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString("nombre", newNombre);
                 editor.putString("ubicacion", newUbicacion);
-                if (!newFotoBase64.isEmpty()) {
-                    editor.putString("fotoPerfil", newFotoBase64);
-                }
+                // IMPORTANTE: NO guardar la foto en SharedPreferences
                 editor.apply();
 
                 Toast.makeText(EditProfileActivity.this, "Perfil actualizado correctamente", Toast.LENGTH_SHORT).show();
 
-                // Enviar resultado para que otras actividades se actualicen
                 Intent resultIntent = new Intent();
                 resultIntent.putExtra("perfil_actualizado", true);
                 setResult(RESULT_OK, resultIntent);
