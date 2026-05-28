@@ -23,15 +23,18 @@ public class Solicitud {
     }
 
     public static Solicitud fromJSON(JSONObject json) {
-        Solicitud s = new Solicitud(
-                json.optString("emisorId"),
-                json.optString("emisorNombre"),
-                json.optString("emisorFoto"),
-                json.optString("receptorId")
-        );
-        s.id = json.optString("_id");
-        s.estado = json.optString("estado", "pendiente");
-        s.fecha = json.optLong("fecha");
+        String id = json.optString("_id");
+        String emisorId = json.optString("emisorId");
+        String emisorNombre = json.optString("emisorNombre");
+        String emisorFoto = json.optString("emisorFoto");
+        String receptorId = json.optString("receptorId");
+        String estado = json.optString("estado", "pendiente");
+        long fecha = json.optLong("fecha");
+
+        Solicitud s = new Solicitud(emisorId, emisorNombre, emisorFoto, receptorId);
+        s.id = id;
+        s.estado = estado;
+        s.fecha = fecha;
         return s;
     }
 

@@ -17,7 +17,9 @@
     <color name="gray_light">#999999</color>
     <color name="text_secondary">#555555</color>
     <color name="background_gray">#F5F5F5</color>
-
-
     <color name="red">#FF0000</color>
+    <color name="text_primary">#333333</color>
+    <color name="gray_light_bg">#E4E6EB</color>
+    <color name="text_hint">#999999</color>
+
 </resources>

@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -18,23 +19,22 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SolicitudesActivity extends AppCompatActivity implements SolicitudAdapter.OnSolicitudListener {
+public class ChatsActivity extends AppCompatActivity implements ChatAdapter.OnChatDeletedListener {
 
     private RecyclerView recyclerView;
     private ProgressBar progressBar;
-    private LinearLayout layoutNoSolicitudes;
-    private List<Solicitud> solicitudes;
-    private SolicitudAdapter adapter;
+    private LinearLayout layoutNoChats;
+    private ChatAdapter chatAdapter;
+    private List<Chat> chatsList;
     private String currentUserId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_solicitudes);
+        setContentView(R.layout.activity_chats);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -42,38 +42,33 @@ public class SolicitudesActivity extends AppCompatActivity implements SolicitudA
 
         recyclerView = findViewById(R.id.recyclerView);
         progressBar = findViewById(R.id.progressBar);
-        layoutNoSolicitudes = findViewById(R.id.layoutNoSolicitudes);
+        layoutNoChats = findViewById(R.id.layoutNoChats);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        solicitudes = new ArrayList<>();
+        chatsList = new ArrayList<>();
 
         SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
         currentUserId = prefs.getString("userId", "");
 
-        adapter = new SolicitudAdapter(this, solicitudes, currentUserId);
-        recyclerView.setAdapter(adapter);
+        chatAdapter = new ChatAdapter(this, chatsList, currentUserId);
+        recyclerView.setAdapter(chatAdapter);
 
-        loadSolicitudes();
+        loadChats();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadSolicitudes();
+        loadChats();
     }
 
     @Override
-    public void onSolicitudAceptada() {
-        loadSolicitudes();
+    public void onChatDeleted() {
+        loadChats();
     }
 
-    @Override
-    public void onSolicitudRechazada() {
-        loadSolicitudes();
-    }
-
-    private void loadSolicitudes() {
-        new LoadSolicitudesTask().execute();
+    private void loadChats() {
+        new LoadChatsTask().execute();
     }
 
     private void setBasicAuth(HttpURLConnection conn) {
@@ -82,23 +77,17 @@ public class SolicitudesActivity extends AppCompatActivity implements SolicitudA
         conn.setRequestProperty("Authorization", "Basic " + new String(encoded));
     }
 
-    private class LoadSolicitudesTask extends AsyncTask<Void, Void, List<Solicitud>> {
+    private class LoadChatsTask extends AsyncTask<Void, Void, List<Chat>> {
         @Override
         protected void onPreExecute() {
             progressBar.setVisibility(View.VISIBLE);
-            recyclerView.setVisibility(View.GONE);
-            layoutNoSolicitudes.setVisibility(View.GONE);
         }
 
         @Override
-        protected List<Solicitud> doInBackground(Void... voids) {
-            List<Solicitud> lista = new ArrayList<>();
+        protected List<Chat> doInBackground(Void... voids) {
+            List<Chat> lista = new ArrayList<>();
             try {
-                // Usar la vista pendientes que ya tienes en CouchDB
-                // La vista emite doc.receptorId como key, y el documento completo como value
-                String encodedKey = URLEncoder.encode("\"" + currentUserId + "\"", "UTF-8");
-                String urlStr = Configuracion.SERVIDOR + "/db_solicitudes/_design/solicitudes/_view/pendientes?key=" + encodedKey;
-
+                String urlStr = Configuracion.SERVIDOR + "/db_chats/_design/chats/_view/por_usuario?key=\"" + currentUserId + "\"";
                 URL url = new URL(urlStr);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 setBasicAuth(conn);
@@ -119,10 +108,9 @@ public class SolicitudesActivity extends AppCompatActivity implements SolicitudA
                     if (rows != null) {
                         for (int i = 0; i < rows.length(); i++) {
                             JSONObject row = rows.getJSONObject(i);
-                            // El documento completo está en "value"
                             JSONObject doc = row.getJSONObject("value");
-                            Solicitud solicitud = Solicitud.fromJSON(doc);
-                            lista.add(solicitud);
+                            Chat chat = Chat.fromJSON(doc);
+                            lista.add(chat);
                         }
                     }
                 }
@@ -133,17 +121,17 @@ public class SolicitudesActivity extends AppCompatActivity implements SolicitudA
         }
 
         @Override
-        protected void onPostExecute(List<Solicitud> result) {
+        protected void onPostExecute(List<Chat> result) {
             progressBar.setVisibility(View.GONE);
             if (!result.isEmpty()) {
-                solicitudes.clear();
-                solicitudes.addAll(result);
-                adapter.notifyDataSetChanged();
+                chatsList.clear();
+                chatsList.addAll(result);
+                chatAdapter.notifyDataSetChanged();
                 recyclerView.setVisibility(View.VISIBLE);
-                layoutNoSolicitudes.setVisibility(View.GONE);
+                layoutNoChats.setVisibility(View.GONE);
             } else {
                 recyclerView.setVisibility(View.GONE);
-                layoutNoSolicitudes.setVisibility(View.VISIBLE);
+                layoutNoChats.setVisibility(View.VISIBLE);
             }
         }
     }

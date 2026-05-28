@@ -1,7 +1,6 @@
 package com.example.comunidadsv;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.view.LayoutInflater;
@@ -13,8 +12,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import org.json.JSONArray;
 import org.json.JSONObject;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -56,9 +55,12 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Solicitud s = solicitudes.get(position);
 
-        holder.txtNombre.setText(s.getEmisorNombre());
+        // Mostrar el nombre del EMISOR (quien envía la solicitud)
+        String emisorNombre = s.getEmisorNombre();
+        holder.txtNombre.setText(emisorNombre);
         holder.txtMensaje.setText("Quiere seguirte");
 
+        // Cargar foto del emisor
         if (s.getEmisorFoto() != null && !s.getEmisorFoto().isEmpty()) {
             Bitmap bitmap = ImageUtils.base64ToBitmap(s.getEmisorFoto());
             if (bitmap != null) {
@@ -108,17 +110,18 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
         @Override
         protected Boolean doInBackground(Void... voids) {
             try {
-                // Obtener el documento actual para tener la rev
                 String getUrl = Configuracion.SERVIDOR + "/db_solicitudes/" + solicitud.getId();
                 URL getUrlObj = new URL(getUrl);
                 HttpURLConnection getConn = (HttpURLConnection) getUrlObj.openConnection();
                 setBasicAuth(getConn);
                 getConn.setRequestMethod("GET");
+                getConn.setConnectTimeout(10000);
+                getConn.setReadTimeout(10000);
 
                 String rev = "";
                 if (getConn.getResponseCode() == 200) {
                     InputStream in = getConn.getInputStream();
-                    java.io.BufferedReader reader = new java.io.BufferedReader(new InputStreamReader(in));
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
                     StringBuilder sb = new StringBuilder();
                     String line;
                     while ((line = reader.readLine()) != null) sb.append(line);
@@ -126,7 +129,6 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
                     rev = doc.optString("_rev", "");
                 }
 
-                // Actualizar estado de la solicitud
                 String urlStr = Configuracion.SERVIDOR + "/db_solicitudes/" + solicitud.getId();
                 URL url = new URL(urlStr);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -134,6 +136,8 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
                 conn.setRequestMethod("PUT");
                 conn.setRequestProperty("Content-Type", "application/json");
                 conn.setDoOutput(true);
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
 
                 JSONObject doc = new JSONObject();
                 doc.put("_id", solicitud.getId());
@@ -154,33 +158,7 @@ public class SolicitudAdapter extends RecyclerView.Adapter<SolicitudAdapter.View
                 os.close();
 
                 int responseCode = conn.getResponseCode();
-                boolean success = responseCode == 201 || responseCode == 202;
-
-                // Si se aceptó, crear la relación de seguimiento
-                if (aceptar && success) {
-                    // RELACIÓN CORREGIDA:
-                    // El receptor (currentUserId) ahora SIGUE al emisor
-                    // Es decir: receptor sigue a emisor
-                    Follow follow = new Follow(solicitud.getReceptorId(), solicitud.getEmisorId());
-                    String followUrl = Configuracion.SERVIDOR + "/db_seguidores/" + follow.getId();
-                    URL followUrlObj = new URL(followUrl);
-                    HttpURLConnection followConn = (HttpURLConnection) followUrlObj.openConnection();
-                    setBasicAuth(followConn);
-                    followConn.setRequestMethod("PUT");
-                    followConn.setRequestProperty("Content-Type", "application/json");
-                    followConn.setDoOutput(true);
-
-                    OutputStream os2 = followConn.getOutputStream();
-                    BufferedWriter writer2 = new BufferedWriter(new OutputStreamWriter(os2, "UTF-8"));
-                    writer2.write(follow.toJSON().toString());
-                    writer2.flush();
-                    writer2.close();
-                    os2.close();
-
-                    followConn.getResponseCode();
-                }
-
-                return success;
+                return responseCode == 201 || responseCode == 202;
 
             } catch (Exception e) {
                 errorMsg = e.getMessage();
