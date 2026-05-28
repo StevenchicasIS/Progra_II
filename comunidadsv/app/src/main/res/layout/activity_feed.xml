@@ -42,6 +42,36 @@
 
             </LinearLayout>
 
+            <!-- Icono de Notificaciones -->
+            <RelativeLayout
+                android:id="@+id/iconNotificaciones"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_centerInParent="true"
+                    android:src="@drawable/ic_notification"
+                    android:tint="#666666" />
+
+                <TextView
+                    android:id="@+id/badgeNotificaciones"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_alignParentTop="true"
+                    android:layout_alignParentEnd="true"
+                    android:background="@drawable/badge_red"
+                    android:gravity="center"
+                    android:text="0"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10sp"
+                    android:visibility="gone" />
+
+            </RelativeLayout>
+
             <!-- Icono de Solicitudes -->
             <RelativeLayout
                 android:id="@+id/iconSolicitudes"

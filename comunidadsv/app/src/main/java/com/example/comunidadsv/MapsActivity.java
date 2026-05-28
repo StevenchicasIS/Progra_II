@@ -86,7 +86,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 
         navChat.setOnClickListener(v -> {
-            Toast.makeText(this, "Próximamente: Chat", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(MapsActivity.this, ChatsActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
         });
 
         navProfile.setOnClickListener(v -> {
@@ -106,7 +109,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap = googleMap;
         mMap.getUiSettings().setZoomControlsEnabled(true);
 
-        // Centrar en El Salvador
         LatLng elSalvador = new LatLng(13.7942, -88.8965);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(elSalvador, 8));
 

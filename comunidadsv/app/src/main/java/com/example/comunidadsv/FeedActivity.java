@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,11 +37,12 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
     private List<Post> posts;
     private ProgressBar progressBar;
     private String currentUserId;
+    private String currentUserNombre;
     private TextView tabParaTi, tabSiguiendo;
     private LinearLayout navHome, navMap, navChat, navProfile;
     private FloatingActionButton fabAddPost;
-    private RelativeLayout iconSolicitudes;
-    private TextView badgeSolicitudes;
+    private RelativeLayout iconSolicitudes, iconNotificaciones;
+    private TextView badgeSolicitudes, badgeNotificaciones;
 
     private String currentFilter = "parati";
     private Set<String> followingIds = new HashSet<>();
@@ -60,29 +62,35 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         navProfile = findViewById(R.id.navProfile);
         fabAddPost = findViewById(R.id.fabAddPost);
         iconSolicitudes = findViewById(R.id.iconSolicitudes);
+        iconNotificaciones = findViewById(R.id.iconNotificaciones);
         badgeSolicitudes = findViewById(R.id.badgeSolicitudes);
+        badgeNotificaciones = findViewById(R.id.badgeNotificaciones);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         posts = new ArrayList<>();
 
         SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
         currentUserId = prefs.getString("userId", "");
-        String nombre = prefs.getString("nombre", "Usuario");
+        currentUserNombre = prefs.getString("nombre", "Usuario");
 
-        Toast.makeText(this, "Bienvenido " + nombre, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Bienvenido " + currentUserNombre, Toast.LENGTH_SHORT).show();
 
         postAdapter = new PostAdapter(this, posts, currentUserId, this);
         recyclerView.setAdapter(postAdapter);
 
-        // Icono de solicitudes
         iconSolicitudes.setOnClickListener(v -> {
             Intent intent = new Intent(FeedActivity.this, SolicitudesActivity.class);
             startActivity(intent);
         });
 
-        // Cargar lista de usuarios que sigo
+        iconNotificaciones.setOnClickListener(v -> {
+            Intent intent = new Intent(FeedActivity.this, NotificacionesActivity.class);
+            startActivity(intent);
+        });
+
         loadFollowingList();
         loadSolicitudesCount();
+        loadNotificacionesCount();
 
         tabParaTi.setOnClickListener(v -> {
             setTabSelected(tabParaTi);
@@ -101,15 +109,24 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         });
 
         navMap.setOnClickListener(v -> {
-            Toast.makeText(this, "Próximamente: Mapa", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(FeedActivity.this, MapsActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
         });
 
         navChat.setOnClickListener(v -> {
-            Toast.makeText(this, "Próximamente: Chat", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(FeedActivity.this, ChatsActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
         });
 
         navProfile.setOnClickListener(v -> {
-            startActivity(new Intent(FeedActivity.this, ProfileActivity.class));
+            Intent intent = new Intent(FeedActivity.this, ProfileActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
         });
 
         fabAddPost.setOnClickListener(v -> {
@@ -122,6 +139,10 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
 
     private void loadSolicitudesCount() {
         new LoadSolicitudesCountTask().execute();
+    }
+
+    private void loadNotificacionesCount() {
+        new LoadNotificacionesCountTask().execute();
     }
 
     private void updateBadge(TextView badge, int count) {
@@ -149,6 +170,7 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         super.onResume();
         loadFollowingList();
         loadSolicitudesCount();
+        loadNotificacionesCount();
         loadPosts();
     }
 
@@ -167,6 +189,56 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
 
     private void loadPosts() {
         new LoadPostsTask().execute();
+    }
+
+    private String obtenerNombreUsuario(String userId) {
+        try {
+            String urlStr = Configuracion.SERVIDOR + "/db_usuarios/" + userId;
+            URL url = new URL(urlStr);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            setBasicAuth(conn);
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+
+            if (conn.getResponseCode() == 200) {
+                InputStream in = conn.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                JSONObject user = new JSONObject(sb.toString());
+                return user.optString("nombre", "Usuario");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "Usuario";
+    }
+
+    private String obtenerFotoUsuario(String userId) {
+        try {
+            String urlStr = Configuracion.SERVIDOR + "/db_usuarios/" + userId;
+            URL url = new URL(urlStr);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            setBasicAuth(conn);
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+
+            if (conn.getResponseCode() == 200) {
+                InputStream in = conn.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                JSONObject user = new JSONObject(sb.toString());
+                return user.optString("fotoPerfil", "");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     @Override
@@ -207,6 +279,44 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
         conn.setRequestProperty("Authorization", "Basic " + new String(encoded));
     }
 
+    private class LoadNotificacionesCountTask extends AsyncTask<Void, Void, Integer> {
+        @Override
+        protected Integer doInBackground(Void... voids) {
+            int count = 0;
+            try {
+                String encodedUserId = URLEncoder.encode("\"" + currentUserId + "\"", "UTF-8");
+                String urlStr = Configuracion.SERVIDOR + "/db_notificaciones/_design/notificaciones/_view/no_leidas?key=" + encodedUserId;
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                setBasicAuth(conn);
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+
+                if (conn.getResponseCode() == 200) {
+                    InputStream in = conn.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    JSONObject response = new JSONObject(sb.toString());
+                    JSONArray rows = response.optJSONArray("rows");
+                    if (rows != null) {
+                        count = rows.length();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return count;
+        }
+
+        @Override
+        protected void onPostExecute(Integer count) {
+            updateBadge(badgeNotificaciones, count);
+        }
+    }
+
     private class LoadSolicitudesCountTask extends AsyncTask<Void, Void, Integer> {
         @Override
         protected Integer doInBackground(Void... voids) {
@@ -217,6 +327,8 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 setBasicAuth(conn);
                 conn.setRequestMethod("GET");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
 
                 if (conn.getResponseCode() == 200) {
                     InputStream in = conn.getInputStream();
@@ -252,6 +364,8 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 setBasicAuth(conn);
                 conn.setRequestMethod("GET");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
 
                 if (conn.getResponseCode() == 200) {
                     InputStream in = conn.getInputStream();
@@ -377,6 +491,8 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 HttpURLConnection getConn = (HttpURLConnection) getUrlObj.openConnection();
                 setBasicAuth(getConn);
                 getConn.setRequestMethod("GET");
+                getConn.setConnectTimeout(10000);
+                getConn.setReadTimeout(10000);
 
                 if (getConn.getResponseCode() != 200) {
                     errorMsg = "Error al obtener publicación";
@@ -431,6 +547,8 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 putConn.setRequestMethod("PUT");
                 putConn.setRequestProperty("Content-Type", "application/json");
                 putConn.setDoOutput(true);
+                putConn.setConnectTimeout(10000);
+                putConn.setReadTimeout(10000);
 
                 OutputStream os = putConn.getOutputStream();
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
@@ -440,7 +558,28 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 os.close();
 
                 int responseCode = putConn.getResponseCode();
-                return responseCode == 201 || responseCode == 202;
+                boolean success = responseCode == 201 || responseCode == 202;
+
+                // CREAR NOTIFICACIÓN DE LIKE
+                if (success && !post.getUserId().equals(currentUserId)) {
+                    String nombreEmisor = obtenerNombreUsuario(currentUserId);
+                    String fotoEmisor = obtenerFotoUsuario(currentUserId);
+                    String mensaje = nombreEmisor + " le dio like a tu publicación \"" + post.getTitulo() + "\"";
+
+                    Notificacion notificacion = new Notificacion(
+                            post.getUserId(),
+                            "like",
+                            currentUserId,
+                            nombreEmisor,
+                            fotoEmisor,
+                            post.getId(),
+                            post.getTitulo(),
+                            mensaje
+                    );
+                    crearNotificacion(notificacion);
+                }
+
+                return success;
 
             } catch (Exception e) {
                 errorMsg = e.getMessage();
@@ -474,6 +613,8 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 HttpURLConnection getConn = (HttpURLConnection) getUrlObj.openConnection();
                 setBasicAuth(getConn);
                 getConn.setRequestMethod("GET");
+                getConn.setConnectTimeout(10000);
+                getConn.setReadTimeout(10000);
 
                 if (getConn.getResponseCode() != 200) {
                     errorMsg = "Error al obtener publicación";
@@ -503,6 +644,8 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 putConn.setRequestMethod("PUT");
                 putConn.setRequestProperty("Content-Type", "application/json");
                 putConn.setDoOutput(true);
+                putConn.setConnectTimeout(10000);
+                putConn.setReadTimeout(10000);
 
                 OutputStream os = putConn.getOutputStream();
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
@@ -512,7 +655,28 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 os.close();
 
                 int responseCode = putConn.getResponseCode();
-                return responseCode == 201 || responseCode == 202;
+                boolean success = responseCode == 201 || responseCode == 202;
+
+                // CREAR NOTIFICACIÓN DE COMENTARIO
+                if (success && !post.getUserId().equals(currentUserId)) {
+                    String nombreEmisor = obtenerNombreUsuario(currentUserId);
+                    String fotoEmisor = obtenerFotoUsuario(currentUserId);
+                    String mensaje = nombreEmisor + " comentó en tu publicación \"" + post.getTitulo() + "\"";
+
+                    Notificacion notificacion = new Notificacion(
+                            post.getUserId(),
+                            "comentario",
+                            currentUserId,
+                            nombreEmisor,
+                            fotoEmisor,
+                            post.getId(),
+                            post.getTitulo(),
+                            mensaje
+                    );
+                    crearNotificacion(notificacion);
+                }
+
+                return success;
 
             } catch (Exception e) {
                 errorMsg = e.getMessage();
@@ -526,6 +690,40 @@ public class FeedActivity extends AppCompatActivity implements PostAdapter.OnPos
                 postAdapter.updatePost(position, post);
             } else {
                 Toast.makeText(FeedActivity.this, "Error: " + errorMsg, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void crearNotificacion(Notificacion notificacion) {
+        new CrearNotificacionTask().execute(notificacion);
+    }
+
+    private class CrearNotificacionTask extends AsyncTask<Notificacion, Void, Boolean> {
+        @Override
+        protected Boolean doInBackground(Notificacion... params) {
+            Notificacion n = params[0];
+            try {
+                String urlStr = Configuracion.SERVIDOR + "/db_notificaciones/" + n.getId();
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                setBasicAuth(conn);
+                conn.setRequestMethod("PUT");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setDoOutput(true);
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+
+                OutputStream os = conn.getOutputStream();
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                writer.write(n.toJSON().toString());
+                writer.flush();
+                writer.close();
+                os.close();
+
+                return conn.getResponseCode() == 201 || conn.getResponseCode() == 202;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
             }
         }
     }

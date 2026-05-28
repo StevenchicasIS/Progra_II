@@ -140,7 +140,10 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         });
 
         navChat.setOnClickListener(v -> {
-            Toast.makeText(this, "Próximamente: Chat", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(ProfileActivity.this, ChatsActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
         });
 
         navProfile.setOnClickListener(v -> {
@@ -176,7 +179,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
     }
 
     private void loadUserData() {
-        // CORREGIDO: Siempre cargar desde CouchDB, nunca desde SharedPreferences para la foto
         new LoadUserDataTask().execute();
     }
 
@@ -252,7 +254,76 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         conn.setRequestProperty("Authorization", "Basic " + new String(encoded));
     }
 
-    // ========== TAREAS ASINCRÓNICAS CORREGIDAS ==========
+    // ========== MÉTODO PARA VERIFICAR SI YA SE SIGUEN MUTUAMENTE ==========
+    private boolean yaSeSiguenMutualmente(String otroUsuarioId) {
+        try {
+            // Verificar si yo sigo al otro usuario
+            String urlStr1 = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + currentUserId + "\"";
+            URL url1 = new URL(urlStr1);
+            HttpURLConnection conn1 = (HttpURLConnection) url1.openConnection();
+            setBasicAuth(conn1);
+            conn1.setRequestMethod("GET");
+            conn1.setConnectTimeout(10000);
+            conn1.setReadTimeout(10000);
+
+            boolean yoSigoAEl = false;
+            if (conn1.getResponseCode() == 200) {
+                InputStream in = conn1.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                JSONObject response = new JSONObject(sb.toString());
+                JSONArray rows = response.optJSONArray("rows");
+                if (rows != null) {
+                    for (int i = 0; i < rows.length(); i++) {
+                        JSONObject row = rows.getJSONObject(i);
+                        String followingId = row.optString("value");
+                        if (followingId.equals(otroUsuarioId)) {
+                            yoSigoAEl = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Verificar si el otro usuario me sigue a mí
+            String urlStr2 = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + otroUsuarioId + "\"";
+            URL url2 = new URL(urlStr2);
+            HttpURLConnection conn2 = (HttpURLConnection) url2.openConnection();
+            setBasicAuth(conn2);
+            conn2.setRequestMethod("GET");
+            conn2.setConnectTimeout(10000);
+            conn2.setReadTimeout(10000);
+
+            boolean elSigueAMi = false;
+            if (conn2.getResponseCode() == 200) {
+                InputStream in = conn2.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                JSONObject response = new JSONObject(sb.toString());
+                JSONArray rows = response.optJSONArray("rows");
+                if (rows != null) {
+                    for (int i = 0; i < rows.length(); i++) {
+                        JSONObject row = rows.getJSONObject(i);
+                        String followingId = row.optString("value");
+                        if (followingId.equals(currentUserId)) {
+                            elSigueAMi = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return yoSigoAEl && elSigueAMi;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
     private class LoadUserDataTask extends AsyncTask<Void, Void, String[]> {
         @Override
@@ -263,6 +334,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 setBasicAuth(conn);
                 conn.setRequestMethod("GET");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
 
                 if (conn.getResponseCode() == 200) {
                     InputStream in = conn.getInputStream();
@@ -301,13 +374,11 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 imgProfile.setImageResource(R.drawable.ic_profile);
             }
 
-            // Si es mi perfil, actualizar SharedPreferences solo con nombre y ubicación
             if (isOwnProfile) {
                 SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString("nombre", data[0]);
                 editor.putString("ubicacion", data[1]);
-                // NO guardar la foto en SharedPreferences
                 editor.apply();
             }
         }
@@ -323,6 +394,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 setBasicAuth(conn);
                 conn.setRequestMethod("GET");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
 
                 if (conn.getResponseCode() == 200) {
                     InputStream in = conn.getInputStream();
@@ -358,6 +431,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 setBasicAuth(conn);
                 conn.setRequestMethod("GET");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
 
                 if (conn.getResponseCode() == 200) {
                     InputStream in = conn.getInputStream();
@@ -392,6 +467,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 setBasicAuth(conn);
                 conn.setRequestMethod("GET");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
 
                 if (conn.getResponseCode() == 200) {
                     InputStream in = conn.getInputStream();
@@ -436,16 +513,23 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         @Override
         protected Boolean doInBackground(Void... voids) {
             try {
+                // VERIFICAR SI YA SE SIGUEN MUTUAMENTE
+                if (yaSeSiguenMutualmente(userId)) {
+                    errorMsg = "Ya se siguen mutuamente";
+                    return false;
+                }
+
                 SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
                 String emisorNombre = prefs.getString("nombre", "Usuario");
 
-                // CORREGIDO: Obtener la foto actual desde CouchDB
                 String emisorFoto = "";
                 String userUrl = Configuracion.SERVIDOR + "/db_usuarios/" + currentUserId;
                 URL userUrlObj = new URL(userUrl);
                 HttpURLConnection userConn = (HttpURLConnection) userUrlObj.openConnection();
                 setBasicAuth(userConn);
                 userConn.setRequestMethod("GET");
+                userConn.setConnectTimeout(10000);
+                userConn.setReadTimeout(10000);
 
                 if (userConn.getResponseCode() == 200) {
                     InputStream in = userConn.getInputStream();
@@ -465,6 +549,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 putConn.setRequestMethod("PUT");
                 putConn.setRequestProperty("Content-Type", "application/json");
                 putConn.setDoOutput(true);
+                putConn.setConnectTimeout(10000);
+                putConn.setReadTimeout(10000);
 
                 OutputStream os = putConn.getOutputStream();
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
@@ -501,6 +587,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 HttpURLConnection searchConn = (HttpURLConnection) searchUrlObj.openConnection();
                 setBasicAuth(searchConn);
                 searchConn.setRequestMethod("GET");
+                searchConn.setConnectTimeout(10000);
+                searchConn.setReadTimeout(10000);
 
                 if (searchConn.getResponseCode() == 200) {
                     InputStream in = searchConn.getInputStream();
@@ -522,6 +610,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                                 HttpURLConnection deleteConn = (HttpURLConnection) deleteUrlObj.openConnection();
                                 setBasicAuth(deleteConn);
                                 deleteConn.setRequestMethod("DELETE");
+                                deleteConn.setConnectTimeout(10000);
+                                deleteConn.setReadTimeout(10000);
                                 return deleteConn.getResponseCode() == 200;
                             }
                         }
@@ -639,6 +729,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 HttpURLConnection getConn = (HttpURLConnection) getUrlObj.openConnection();
                 setBasicAuth(getConn);
                 getConn.setRequestMethod("GET");
+                getConn.setConnectTimeout(10000);
+                getConn.setReadTimeout(10000);
 
                 if (getConn.getResponseCode() != 200) {
                     errorMsg = "Error al obtener publicación";
@@ -693,6 +785,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 putConn.setRequestMethod("PUT");
                 putConn.setRequestProperty("Content-Type", "application/json");
                 putConn.setDoOutput(true);
+                putConn.setConnectTimeout(10000);
+                putConn.setReadTimeout(10000);
 
                 OutputStream os = putConn.getOutputStream();
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
@@ -736,6 +830,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 HttpURLConnection getConn = (HttpURLConnection) getUrlObj.openConnection();
                 setBasicAuth(getConn);
                 getConn.setRequestMethod("GET");
+                getConn.setConnectTimeout(10000);
+                getConn.setReadTimeout(10000);
 
                 if (getConn.getResponseCode() != 200) {
                     errorMsg = "Error al obtener publicación";
@@ -765,6 +861,8 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 putConn.setRequestMethod("PUT");
                 putConn.setRequestProperty("Content-Type", "application/json");
                 putConn.setDoOutput(true);
+                putConn.setConnectTimeout(10000);
+                putConn.setReadTimeout(10000);
 
                 OutputStream os = putConn.getOutputStream();
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
