@@ -140,7 +140,10 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         });
 
         navChat.setOnClickListener(v -> {
-            Toast.makeText(this, "Próximamente: Chat", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(ProfileActivity.this, ChatsActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
         });
 
         navProfile.setOnClickListener(v -> {
@@ -176,7 +179,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
     }
 
     private void loadUserData() {
-        // CORREGIDO: Siempre cargar desde CouchDB, nunca desde SharedPreferences para la foto
         new LoadUserDataTask().execute();
     }
 
@@ -252,8 +254,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         conn.setRequestProperty("Authorization", "Basic " + new String(encoded));
     }
 
-    // ========== TAREAS ASINCRÓNICAS CORREGIDAS ==========
-
     private class LoadUserDataTask extends AsyncTask<Void, Void, String[]> {
         @Override
         protected String[] doInBackground(Void... voids) {
@@ -301,13 +301,11 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 imgProfile.setImageResource(R.drawable.ic_profile);
             }
 
-            // Si es mi perfil, actualizar SharedPreferences solo con nombre y ubicación
             if (isOwnProfile) {
                 SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString("nombre", data[0]);
                 editor.putString("ubicacion", data[1]);
-                // NO guardar la foto en SharedPreferences
                 editor.apply();
             }
         }
@@ -439,7 +437,6 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
                 String emisorNombre = prefs.getString("nombre", "Usuario");
 
-                // CORREGIDO: Obtener la foto actual desde CouchDB
                 String emisorFoto = "";
                 String userUrl = Configuracion.SERVIDOR + "/db_usuarios/" + currentUserId;
                 URL userUrlObj = new URL(userUrl);
