@@ -47,6 +47,11 @@
         <activity android:name=".MapsActivity" />
         <activity android:name=".SolicitudesActivity" />
         <activity android:name=".NotificacionesActivity" />
+        <activity android:name=".FollowListActivity" />
+
+        <!-- Pantallas de Chat -->
+        <activity android:name=".ChatsActivity" />
+        <activity android:name=".ChatDetailActivity" />
 
         <!-- Pantallas de Chat -->
         <activity android:name=".ChatsActivity" />
