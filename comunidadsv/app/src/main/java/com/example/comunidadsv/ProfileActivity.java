@@ -122,6 +122,21 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         });
 
         btnLogout.setOnClickListener(v -> showLogoutDialog());
+
+        // ========== NUEVO: Click en los contadores para ver listas ==========
+        txtSeguidoresCount.setOnClickListener(v -> {
+            Intent intent = new Intent(ProfileActivity.this, FollowListActivity.class);
+            intent.putExtra("userId", userId);
+            intent.putExtra("type", "followers");
+            startActivity(intent);
+        });
+
+        txtSeguidosCount.setOnClickListener(v -> {
+            Intent intent = new Intent(ProfileActivity.this, FollowListActivity.class);
+            intent.putExtra("userId", userId);
+            intent.putExtra("type", "following");
+            startActivity(intent);
+        });
     }
 
     private void setupBottomNavigation() {
@@ -254,76 +269,7 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         conn.setRequestProperty("Authorization", "Basic " + new String(encoded));
     }
 
-    // ========== MÉTODO PARA VERIFICAR SI YA SE SIGUEN MUTUAMENTE ==========
-    private boolean yaSeSiguenMutualmente(String otroUsuarioId) {
-        try {
-            // Verificar si yo sigo al otro usuario
-            String urlStr1 = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + currentUserId + "\"";
-            URL url1 = new URL(urlStr1);
-            HttpURLConnection conn1 = (HttpURLConnection) url1.openConnection();
-            setBasicAuth(conn1);
-            conn1.setRequestMethod("GET");
-            conn1.setConnectTimeout(10000);
-            conn1.setReadTimeout(10000);
-
-            boolean yoSigoAEl = false;
-            if (conn1.getResponseCode() == 200) {
-                InputStream in = conn1.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) sb.append(line);
-                JSONObject response = new JSONObject(sb.toString());
-                JSONArray rows = response.optJSONArray("rows");
-                if (rows != null) {
-                    for (int i = 0; i < rows.length(); i++) {
-                        JSONObject row = rows.getJSONObject(i);
-                        String followingId = row.optString("value");
-                        if (followingId.equals(otroUsuarioId)) {
-                            yoSigoAEl = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // Verificar si el otro usuario me sigue a mí
-            String urlStr2 = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + otroUsuarioId + "\"";
-            URL url2 = new URL(urlStr2);
-            HttpURLConnection conn2 = (HttpURLConnection) url2.openConnection();
-            setBasicAuth(conn2);
-            conn2.setRequestMethod("GET");
-            conn2.setConnectTimeout(10000);
-            conn2.setReadTimeout(10000);
-
-            boolean elSigueAMi = false;
-            if (conn2.getResponseCode() == 200) {
-                InputStream in = conn2.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) sb.append(line);
-                JSONObject response = new JSONObject(sb.toString());
-                JSONArray rows = response.optJSONArray("rows");
-                if (rows != null) {
-                    for (int i = 0; i < rows.length(); i++) {
-                        JSONObject row = rows.getJSONObject(i);
-                        String followingId = row.optString("value");
-                        if (followingId.equals(currentUserId)) {
-                            elSigueAMi = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            return yoSigoAEl && elSigueAMi;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
+    // ========== TAREAS ASINCRÓNICAS ==========
 
     private class LoadUserDataTask extends AsyncTask<Void, Void, String[]> {
         @Override
@@ -513,7 +459,7 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
         @Override
         protected Boolean doInBackground(Void... voids) {
             try {
-                // VERIFICAR SI YA SE SIGUEN MUTUAMENTE
+                // Verificar si ya se siguen mutuamente
                 if (yaSeSiguenMutualmente(userId)) {
                     errorMsg = "Ya se siguen mutuamente";
                     return false;
@@ -576,6 +522,76 @@ public class ProfileActivity extends AppCompatActivity implements PostAdapter.On
                 Toast.makeText(ProfileActivity.this, "Error: " + errorMsg, Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    private boolean yaSeSiguenMutualmente(String otroUsuarioId) {
+        try {
+            // Verificar si yo sigo al otro usuario
+            String urlStr1 = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + currentUserId + "\"";
+            URL url1 = new URL(urlStr1);
+            HttpURLConnection conn1 = (HttpURLConnection) url1.openConnection();
+            setBasicAuth(conn1);
+            conn1.setRequestMethod("GET");
+            conn1.setConnectTimeout(10000);
+            conn1.setReadTimeout(10000);
+
+            boolean yoSigoAEl = false;
+            if (conn1.getResponseCode() == 200) {
+                InputStream in = conn1.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                JSONObject response = new JSONObject(sb.toString());
+                JSONArray rows = response.optJSONArray("rows");
+                if (rows != null) {
+                    for (int i = 0; i < rows.length(); i++) {
+                        JSONObject row = rows.getJSONObject(i);
+                        String followingId = row.optString("value");
+                        if (followingId.equals(otroUsuarioId)) {
+                            yoSigoAEl = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Verificar si el otro usuario me sigue a mí
+            String urlStr2 = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + otroUsuarioId + "\"";
+            URL url2 = new URL(urlStr2);
+            HttpURLConnection conn2 = (HttpURLConnection) url2.openConnection();
+            setBasicAuth(conn2);
+            conn2.setRequestMethod("GET");
+            conn2.setConnectTimeout(10000);
+            conn2.setReadTimeout(10000);
+
+            boolean elSigueAMi = false;
+            if (conn2.getResponseCode() == 200) {
+                InputStream in = conn2.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                JSONObject response = new JSONObject(sb.toString());
+                JSONArray rows = response.optJSONArray("rows");
+                if (rows != null) {
+                    for (int i = 0; i < rows.length(); i++) {
+                        JSONObject row = rows.getJSONObject(i);
+                        String followingId = row.optString("value");
+                        if (followingId.equals(currentUserId)) {
+                            elSigueAMi = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return yoSigoAEl && elSigueAMi;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     private class UnfollowTask extends AsyncTask<Void, Void, Boolean> {
