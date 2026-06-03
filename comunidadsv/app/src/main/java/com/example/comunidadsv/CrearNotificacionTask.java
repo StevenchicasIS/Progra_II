@@ -11,6 +11,7 @@ import java.net.URL;
 public class CrearNotificacionTask extends AsyncTask<Notificacion, Void, Boolean> {
 
     private static CrearNotificacionTask instance;
+    private String errorMsg = "";
 
     public static CrearNotificacionTask getInstance() {
         if (instance == null) {
@@ -45,6 +46,7 @@ public class CrearNotificacionTask extends AsyncTask<Notificacion, Void, Boolean
             return responseCode == 201 || responseCode == 202;
 
         } catch (Exception e) {
+            errorMsg = e.getMessage();
             e.printStackTrace();
             return false;
         }
@@ -54,5 +56,9 @@ public class CrearNotificacionTask extends AsyncTask<Notificacion, Void, Boolean
         String auth = Configuracion.USER + ":" + Configuracion.PASS;
         byte[] encoded = android.util.Base64.encode(auth.getBytes(), android.util.Base64.NO_WRAP);
         conn.setRequestProperty("Authorization", "Basic " + new String(encoded));
+    }
+
+    public String getErrorMsg() {
+        return errorMsg;
     }
 }

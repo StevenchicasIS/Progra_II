@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="#F5F5F5">
 
     <androidx.appcompat.widget.Toolbar
@@ -11,27 +12,27 @@
         android:layout_height="?attr/actionBarSize"
         android:background="#0A7A33"
         app:titleTextColor="@android:color/white"
+        app:navigationIcon="@drawable/ic_back"
         app:title="Mapa de Publicaciones" />
 
-    <fragment
-        android:id="@+id/map"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/toolbar" />
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
+        android:layout_gravity="center"
+        android:layout_marginVertical="16dp"
         android:visibility="gone"
         android:indeterminateTint="#0A7A33" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="70dp"
-        android:layout_alignParentBottom="true"
         android:orientation="horizontal"
         android:background="#FFFFFF"
         android:elevation="8dp"
@@ -44,8 +45,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
-            android:orientation="vertical"
-            android:background="?attr/selectableItemBackground">
+            android:orientation="vertical">
 
             <ImageView
                 android:layout_width="24dp"
@@ -67,8 +67,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
-            android:orientation="vertical"
-            android:background="?attr/selectableItemBackground">
+            android:orientation="vertical">
 
             <ImageView
                 android:layout_width="24dp"
@@ -90,8 +89,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
-            android:orientation="vertical"
-            android:background="?attr/selectableItemBackground">
+            android:orientation="vertical">
 
             <ImageView
                 android:layout_width="24dp"
@@ -113,8 +111,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
-            android:orientation="vertical"
-            android:background="?attr/selectableItemBackground">
+            android:orientation="vertical">
 
             <ImageView
                 android:layout_width="24dp"
@@ -132,4 +129,4 @@
 
     </LinearLayout>
 
-</RelativeLayout>
+</LinearLayout>

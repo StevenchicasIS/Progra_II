@@ -210,6 +210,18 @@
 
             </GridLayout>
 
+            <!-- ESTADO DEL GPS - NUEVO TEXTO -->
+            <TextView
+                android:id="@+id/txtEstadoGps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔄 Obteniendo ubicación..."
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:padding="8dp"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp" />
+
             <!-- Ubicación -->
             <TextView
                 android:layout_width="match_parent"

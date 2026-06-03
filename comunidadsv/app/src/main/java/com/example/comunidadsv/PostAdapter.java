@@ -251,7 +251,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             receptorNombre = params[4];
 
             try {
-                // Verificar si ya existe una solicitud pendiente
                 String checkUrl = Configuracion.SERVIDOR + "/db_solicitudes/_design/solicitudes/_view/pendientes?key=\"" + receptorId + "\"";
                 URL checkUrlObj = new URL(checkUrl);
                 HttpURLConnection checkConn = (HttpURLConnection) checkUrlObj.openConnection();
@@ -274,7 +273,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                     }
                 }
 
-                // Crear nueva solicitud con el nombre del EMISOR
                 Solicitud solicitud = new Solicitud(emisorId, emisorNombre, emisorFoto, receptorId);
                 String putUrl = Configuracion.SERVIDOR + "/db_solicitudes/" + solicitud.getId();
                 URL putUrlObj = new URL(putUrl);

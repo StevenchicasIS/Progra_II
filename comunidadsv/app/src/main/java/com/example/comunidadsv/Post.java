@@ -20,10 +20,18 @@ public class Post {
     private String ubicacionPost;
     private List<String> imagenesBase64;
 
+    // NUEVAS VARIABLES PARA COORDENADAS
+    private double latitud;
+    private double longitud;
+    private boolean tieneCoordenadas;
+
     public Post() {
         this.likedBy = new ArrayList<>();
         this.comments = new ArrayList<>();
         this.imagenesBase64 = new ArrayList<>();
+        this.tieneCoordenadas = false;
+        this.latitud = 0;
+        this.longitud = 0;
     }
 
     public static Post fromJSON(JSONObject json, String docId) {
@@ -38,6 +46,11 @@ public class Post {
         post.likes = json.optInt("likes", 0);
         post.categoria = json.optString("categoria");
         post.ubicacionPost = json.optString("ubicacion");
+
+        // LEER COORDENADAS
+        post.latitud = json.optDouble("latitud", 0);
+        post.longitud = json.optDouble("longitud", 0);
+        post.tieneCoordenadas = json.optBoolean("tieneCoordenadas", false);
 
         JSONArray likedArray = json.optJSONArray("likedBy");
         if (likedArray != null) {
@@ -84,6 +97,11 @@ public class Post {
             json.put("ubicacion", ubicacionPost);
             json.put("likedBy", new JSONArray(likedBy));
 
+            // GUARDAR COORDENADAS
+            json.put("latitud", latitud);
+            json.put("longitud", longitud);
+            json.put("tieneCoordenadas", tieneCoordenadas);
+
             JSONArray commentsArray = new JSONArray();
             for (Comment c : comments) {
                 commentsArray.put(c.toJSON());
@@ -127,6 +145,14 @@ public class Post {
     public void setUbicacionPost(String ubicacionPost) { this.ubicacionPost = ubicacionPost; }
     public List<String> getImagenesBase64() { return imagenesBase64; }
     public void setImagenesBase64(List<String> imagenesBase64) { this.imagenesBase64 = imagenesBase64; }
+
+    // Getters y Setters para coordenadas
+    public double getLatitud() { return latitud; }
+    public void setLatitud(double latitud) { this.latitud = latitud; }
+    public double getLongitud() { return longitud; }
+    public void setLongitud(double longitud) { this.longitud = longitud; }
+    public boolean isTieneCoordenadas() { return tieneCoordenadas; }
+    public void setTieneCoordenadas(boolean tieneCoordenadas) { this.tieneCoordenadas = tieneCoordenadas; }
 
     public boolean isLikedByUser(String userId) {
         return likedBy.contains(userId);

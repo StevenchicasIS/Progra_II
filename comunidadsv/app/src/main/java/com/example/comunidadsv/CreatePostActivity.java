@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -24,6 +25,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
@@ -43,7 +45,7 @@ import java.util.UUID;
 public class CreatePostActivity extends AppCompatActivity {
 
     private EditText edtTitulo, edtDescripcion, edtUbicacion;
-    private TextView txtContador;
+    private TextView txtContador, txtEstadoGps;
     private Button btnPublicar;
     private ProgressBar progressBar;
     private LinearLayout fotosContainer;
@@ -52,8 +54,15 @@ public class CreatePostActivity extends AppCompatActivity {
     private String categoriaSeleccionada = "";
     private String userId, userName, userEmail;
     private List<Uri> imagenesSeleccionadas = new ArrayList<>();
-    private List<String> imagenesBase64 = new ArrayList<>();  // NUEVO: Guardar Base64
+    private List<String> imagenesBase64 = new ArrayList<>();
     private LocationManager locationManager;
+    private LocationListener locationListener;
+
+    // Variables para coordenadas
+    private double latitudActual = 0;
+    private double longitudActual = 0;
+    private boolean tieneCoordenadas = false;
+    private boolean obteniendoUbicacion = false;
 
     private TextView[] categorias = new TextView[8];
     private int[] categoriaIds = {
@@ -82,6 +91,7 @@ public class CreatePostActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         fotosContainer = findViewById(R.id.fotosContainer);
         gridCategorias = findViewById(R.id.gridCategorias);
+        txtEstadoGps = findViewById(R.id.txtEstadoGps);
 
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
@@ -121,6 +131,7 @@ public class CreatePostActivity extends AppCompatActivity {
 
         btnPublicar.setOnClickListener(v -> publicar());
 
+        // OBTENER UBICACIÓN AUTOMÁTICAMENTE AL ABRIR
         obtenerUbicacionActual();
     }
 
@@ -139,6 +150,7 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void obtenerUbicacionActual() {
+        // Verificar permisos
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -147,16 +159,136 @@ public class CreatePostActivity extends AppCompatActivity {
             return;
         }
 
-        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if (location == null) {
-            location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        // Verificar si GPS está activado
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            mostrarDialogoActivarGPS();
+            return;
         }
 
-        if (location != null) {
-            new ObtenerDireccionTask().execute(location.getLatitude(), location.getLongitude());
-        } else {
-            edtUbicacion.setText("Usa la ubicación manual");
-            Toast.makeText(this, "No se pudo obtener ubicación", Toast.LENGTH_SHORT).show();
+        // Obtener ubicación
+        iniciarGPS();
+    }
+
+    private void mostrarDialogoActivarGPS() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("GPS desactivado")
+                .setMessage("Para obtener tu ubicación automática, necesitas activar el GPS. ¿Quieres activarlo?")
+                .setPositiveButton("Activar GPS", (dialog, which) -> {
+                    startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                })
+                .setNegativeButton("Escribir manualmente", (dialog, which) -> {
+                    txtEstadoGps.setVisibility(View.GONE);
+                    edtUbicacion.setHint("Escribe tu ubicación manualmente");
+                    Toast.makeText(this, "Puedes escribir tu ubicación manualmente", Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
+
+    private void iniciarGPS() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        obteniendoUbicacion = true;
+        txtEstadoGps.setVisibility(View.VISIBLE);
+        txtEstadoGps.setText("🔄 Obteniendo ubicación...");
+        txtEstadoGps.setTextColor(getColor(R.color.gray_text));
+
+        // Intentar obtener última ubicación conocida primero
+        Location lastLocation = null;
+        try {
+            lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (lastLocation == null) {
+                lastLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        }
+
+        if (lastLocation != null && lastLocation.getAccuracy() < 100) { // Precisión aceptable
+            latitudActual = lastLocation.getLatitude();
+            longitudActual = lastLocation.getLongitude();
+            tieneCoordenadas = true;
+            obteniendoUbicacion = false;
+            txtEstadoGps.setText("✅ Ubicación obtenida!");
+            txtEstadoGps.setTextColor(getColor(R.color.green_primary));
+            new ObtenerDireccionTask().execute(latitudActual, longitudActual);
+            return;
+        }
+
+        // Configurar listener para actualizaciones GPS
+        locationListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(@NonNull Location location) {
+                if (obteniendoUbicacion) {
+                    latitudActual = location.getLatitude();
+                    longitudActual = location.getLongitude();
+                    tieneCoordenadas = true;
+                    obteniendoUbicacion = false;
+                    txtEstadoGps.setText("✅ Ubicación obtenida!");
+                    txtEstadoGps.setTextColor(getColor(R.color.green_primary));
+                    new ObtenerDireccionTask().execute(latitudActual, longitudActual);
+
+                    // Dejar de escuchar actualizaciones
+                    try {
+                        locationManager.removeUpdates(locationListener);
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            @Override
+            public void onProviderDisabled(String provider) {
+                if (provider.equals(LocationManager.GPS_PROVIDER) && obteniendoUbicacion) {
+                    txtEstadoGps.setText("⚠️ GPS desactivado");
+                    txtEstadoGps.setTextColor(getColor(R.color.red));
+                }
+            }
+
+            @Override
+            public void onProviderEnabled(String provider) {
+                if (provider.equals(LocationManager.GPS_PROVIDER) && obteniendoUbicacion) {
+                    txtEstadoGps.setText("🔄 GPS activado, buscando...");
+                }
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {}
+        };
+
+        // Solicitar actualizaciones de ubicación
+        try {
+            locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    2000, // 2 segundos
+                    5,    // 5 metros
+                    locationListener
+            );
+
+            // Timeout después de 15 segundos
+            new android.os.Handler().postDelayed(() -> {
+                if (obteniendoUbicacion) {
+                    obteniendoUbicacion = false;
+                    if (latitudActual == 0 && longitudActual == 0) {
+                        txtEstadoGps.setText("⚠️ No se pudo obtener ubicación");
+                        txtEstadoGps.setTextColor(getColor(R.color.red));
+                        Toast.makeText(CreatePostActivity.this,
+                                "No se pudo obtener ubicación. Puedes escribirla manualmente o presionar el ícono de ubicación para reintentar.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                    try {
+                        locationManager.removeUpdates(locationListener);
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, 15000);
+
+        } catch (SecurityException e) {
+            e.printStackTrace();
+            txtEstadoGps.setText("❌ Error de permisos");
+            obteniendoUbicacion = false;
         }
     }
 
@@ -165,9 +297,12 @@ public class CreatePostActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_LOCATION_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permiso concedido, obteniendo ubicación...", Toast.LENGTH_SHORT).show();
                 obtenerUbicacionActual();
             } else {
-                Toast.makeText(this, "Permiso de ubicación denegado", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Permiso de ubicación denegado. Debes escribir la ubicación manualmente.", Toast.LENGTH_LONG).show();
+                edtUbicacion.setHint("Escribe tu ubicación manualmente");
+                tieneCoordenadas = false;
             }
         }
     }
@@ -184,6 +319,8 @@ public class CreatePostActivity extends AppCompatActivity {
                 if (addresses != null && !addresses.isEmpty()) {
                     Address address = addresses.get(0);
                     String direccion = "";
+
+                    // Construir dirección legible
                     if (address.getSubLocality() != null) {
                         direccion += address.getSubLocality();
                     }
@@ -194,7 +331,10 @@ public class CreatePostActivity extends AppCompatActivity {
                     if (direccion.isEmpty() && address.getAddressLine(0) != null) {
                         direccion = address.getAddressLine(0);
                     }
-                    return direccion.isEmpty() ? String.format("%.4f, %.4f", lat, lon) : direccion;
+                    if (direccion.isEmpty()) {
+                        direccion = String.format("%.4f, %.4f", lat, lon);
+                    }
+                    return direccion;
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -220,13 +360,10 @@ public class CreatePostActivity extends AppCompatActivity {
             Uri imagenUri = data.getData();
             if (imagenesSeleccionadas.size() < 4) {
                 imagenesSeleccionadas.add(imagenUri);
-
-                // Convertir a Base64 inmediatamente para vista previa
                 String base64 = ImageUtils.uriToBase64(this, imagenUri);
                 if (base64 != null) {
                     imagenesBase64.add(base64);
                 }
-
                 agregarVistaPrevia(imagenUri);
             } else {
                 Toast.makeText(this, "Máximo 4 fotos", Toast.LENGTH_SHORT).show();
@@ -271,7 +408,59 @@ public class CreatePostActivity extends AppCompatActivity {
             return;
         }
 
-        new CrearPublicacionTask().execute(titulo, descripcion, ubicacion);
+        // Si no tenemos coordenadas, intentar geocodificar la dirección
+        if (!tieneCoordenadas || latitudActual == 0 || longitudActual == 0) {
+            Toast.makeText(this, "Buscando coordenadas de la ubicación...", Toast.LENGTH_SHORT).show();
+            new GeocodificarDireccionTask().execute(ubicacion, titulo, descripcion);
+        } else {
+            new CrearPublicacionTask().execute(titulo, descripcion, ubicacion);
+        }
+    }
+
+    // Tarea para convertir dirección escrita a coordenadas
+    private class GeocodificarDireccionTask extends AsyncTask<String, Void, double[]> {
+        private String titulo, descripcion, ubicacion;
+
+        @Override
+        protected void onPreExecute() {
+            progressBar.setVisibility(View.VISIBLE);
+            btnPublicar.setEnabled(false);
+        }
+
+        @Override
+        protected double[] doInBackground(String... params) {
+            ubicacion = params[0];
+            titulo = params[1];
+            descripcion = params[2];
+
+            Geocoder geocoder = new Geocoder(CreatePostActivity.this, Locale.getDefault());
+            try {
+                List<Address> addresses = geocoder.getFromLocationName(ubicacion + ", El Salvador", 1);
+                if (addresses != null && !addresses.isEmpty()) {
+                    Address address = addresses.get(0);
+                    return new double[]{address.getLatitude(), address.getLongitude()};
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return new double[]{0, 0};
+        }
+
+        @Override
+        protected void onPostExecute(double[] coordenadas) {
+            if (coordenadas[0] != 0 && coordenadas[1] != 0) {
+                latitudActual = coordenadas[0];
+                longitudActual = coordenadas[1];
+                tieneCoordenadas = true;
+                new CrearPublicacionTask().execute(titulo, descripcion, ubicacion);
+            } else {
+                progressBar.setVisibility(View.GONE);
+                btnPublicar.setEnabled(true);
+                Toast.makeText(CreatePostActivity.this,
+                        "No se encontraron coordenadas para esta ubicación. Sé más específico (ej: San Salvador, Colonia Escalón)",
+                        Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void setBasicAuth(HttpURLConnection conn) {
@@ -282,6 +471,7 @@ public class CreatePostActivity extends AppCompatActivity {
 
     private class CrearPublicacionTask extends AsyncTask<String, Void, Boolean> {
         private String errorMsg = "";
+        private String ubicacionTexto = "";
 
         @Override
         protected void onPreExecute() {
@@ -293,7 +483,7 @@ public class CreatePostActivity extends AppCompatActivity {
         protected Boolean doInBackground(String... params) {
             String titulo = params[0];
             String descripcion = params[1];
-            String ubicacion = params[2];
+            ubicacionTexto = params[2];
 
             try {
                 JSONObject publicacion = new JSONObject();
@@ -304,13 +494,17 @@ public class CreatePostActivity extends AppCompatActivity {
                 publicacion.put("titulo", titulo);
                 publicacion.put("contenido", descripcion);
                 publicacion.put("categoria", categoriaSeleccionada);
-                publicacion.put("ubicacion", ubicacion);
+                publicacion.put("ubicacion", ubicacionTexto);
                 publicacion.put("fecha", System.currentTimeMillis());
                 publicacion.put("likes", 0);
                 publicacion.put("likedBy", new org.json.JSONArray());
                 publicacion.put("comments", new org.json.JSONArray());
 
-                // Guardar imágenes como Base64
+                // GUARDAR COORDENADAS (importante para el mapa)
+                publicacion.put("latitud", latitudActual);
+                publicacion.put("longitud", longitudActual);
+                publicacion.put("tieneCoordenadas", tieneCoordenadas && latitudActual != 0);
+
                 org.json.JSONArray imagenesArray = new org.json.JSONArray();
                 for (String base64 : imagenesBase64) {
                     imagenesArray.put(base64);
@@ -348,11 +542,29 @@ public class CreatePostActivity extends AppCompatActivity {
             btnPublicar.setEnabled(true);
 
             if (success) {
-                Toast.makeText(CreatePostActivity.this, "¡Publicación creada exitosamente!", Toast.LENGTH_LONG).show();
+                String mensaje = "¡Publicación creada exitosamente!";
+                if (tieneCoordenadas && latitudActual != 0) {
+                    mensaje += " 📍 Aparecerá en el mapa";
+                } else {
+                    mensaje += " ⚠️ No tiene coordenadas, no aparecerá en el mapa";
+                }
+                Toast.makeText(CreatePostActivity.this, mensaje, Toast.LENGTH_LONG).show();
                 setResult(RESULT_OK);
                 finish();
             } else {
                 Toast.makeText(CreatePostActivity.this, "Error: " + errorMsg, Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (locationManager != null && locationListener != null) {
+            try {
+                locationManager.removeUpdates(locationListener);
+            } catch (SecurityException e) {
+                e.printStackTrace();
             }
         }
     }

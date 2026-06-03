@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <application
         android:allowBackup="true"
@@ -18,11 +20,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-
-        <!-- API Key de Google Maps -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyC8aIc3c0XOiatvnT_Nsy1nhRYWiv2vKalo" />
 
         <!-- Pantallas de autenticación -->
         <activity android:name=".SplashActivity"
@@ -48,10 +45,6 @@
         <activity android:name=".SolicitudesActivity" />
         <activity android:name=".NotificacionesActivity" />
         <activity android:name=".FollowListActivity" />
-
-        <!-- Pantallas de Chat -->
-        <activity android:name=".ChatsActivity" />
-        <activity android:name=".ChatDetailActivity" />
 
         <!-- Pantallas de Chat -->
         <activity android:name=".ChatsActivity" />
