@@ -1,6 +1,7 @@
 package com.example.comunidadsv;
 
 import android.Manifest;
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -11,7 +12,9 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -40,30 +43,38 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 public class MapsActivity extends AppCompatActivity {
 
+    private static final String TAG = "MapsActivity";
+
     private MapView mapView;
     private ProgressBar progressBar;
     private LinearLayout navHome, navMap, navChat, navProfile;
-    private Toolbar toolbar;
-    private List<Post> postsConUbicacion = new ArrayList<>();
+    private Button btnFechaInicio, btnAplicarFiltro;
+    private List<Post> todasLasPublicaciones = new ArrayList<>();
+    private List<Post> publicacionesFiltradas = new ArrayList<>();
     private MyLocationNewOverlay myLocationOverlay;
     private String currentUserId;
     private Set<String> followingIds = new HashSet<>();
 
     private ItemizedIconOverlay<OverlayItem> itemizedOverlay;
     private ArrayList<OverlayItem> overlayItems = new ArrayList<>();
-    private Map<String, Post> markerToPost = new HashMap<>();
+    private Map<String, List<Post>> markerToPosts = new HashMap<>();
 
-    // Para contar cuántas publicaciones hay en cada coordenada
-    private Map<String, Integer> coordenadaCount = new HashMap<>();
+    private long fechaInicio = 0;
+    private Calendar calInicio;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,7 +85,7 @@ public class MapsActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_maps_osm);
 
-        toolbar = findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
 
@@ -84,14 +95,73 @@ public class MapsActivity extends AppCompatActivity {
         navMap = findViewById(R.id.navMap);
         navChat = findViewById(R.id.navChat);
         navProfile = findViewById(R.id.navProfile);
+        btnFechaInicio = findViewById(R.id.btnFechaInicio);
+        btnAplicarFiltro = findViewById(R.id.btnAplicarFiltro);
 
         SharedPreferences prefs = getSharedPreferences("ComunidadSV", MODE_PRIVATE);
         currentUserId = prefs.getString("userId", "");
 
+        Log.d(TAG, "Current User ID: " + currentUserId);
+
+        // Por defecto mostrar publicaciones de los últimos 30 días
+        calInicio = Calendar.getInstance();
+        calInicio.add(Calendar.DAY_OF_MONTH, -30);
+        calInicio.set(Calendar.HOUR_OF_DAY, 0);
+        calInicio.set(Calendar.MINUTE, 0);
+        calInicio.set(Calendar.SECOND, 0);
+        calInicio.set(Calendar.MILLISECOND, 0);
+        fechaInicio = calInicio.getTimeInMillis();
+        btnFechaInicio.setText("Desde: " + dateFormat.format(calInicio.getTime()));
+
         setupBottomNavigation();
         setupMap();
         setupItemizedOverlay();
+        setupDateFilter();
+
         loadFollowingList();
+    }
+
+    private void setupDateFilter() {
+        btnFechaInicio.setOnClickListener(v -> {
+            DatePickerDialog datePicker = new DatePickerDialog(this,
+                    (view, year, month, dayOfMonth) -> {
+                        calInicio.set(year, month, dayOfMonth);
+                        calInicio.set(Calendar.HOUR_OF_DAY, 0);
+                        calInicio.set(Calendar.MINUTE, 0);
+                        calInicio.set(Calendar.SECOND, 0);
+                        calInicio.set(Calendar.MILLISECOND, 0);
+                        fechaInicio = calInicio.getTimeInMillis();
+                        btnFechaInicio.setText("Desde: " + dateFormat.format(calInicio.getTime()));
+                        aplicarFiltroYActualizarMapa();
+                    },
+                    calInicio.get(Calendar.YEAR),
+                    calInicio.get(Calendar.MONTH),
+                    calInicio.get(Calendar.DAY_OF_MONTH));
+            datePicker.show();
+        });
+
+        btnAplicarFiltro.setOnClickListener(v -> {
+            aplicarFiltroYActualizarMapa();
+        });
+    }
+
+    private void aplicarFiltroYActualizarMapa() {
+        publicacionesFiltradas.clear();
+
+        for (Post post : todasLasPublicaciones) {
+            if (post.getFecha() >= fechaInicio) {
+                publicacionesFiltradas.add(post);
+            }
+        }
+
+        refreshMapMarkers();
+
+        String mensaje = "Mostrando " + publicacionesFiltradas.size() + " publicaciones";
+        if (fechaInicio > 0) {
+            mensaje += " desde " + dateFormat.format(calInicio.getTime());
+        }
+        Toast.makeText(this, mensaje, Toast.LENGTH_LONG).show();
+        Log.d(TAG, mensaje);
     }
 
     private void setupBottomNavigation() {
@@ -141,10 +211,14 @@ public class MapsActivity extends AppCompatActivity {
                 new ItemizedIconOverlay.OnItemGestureListener<OverlayItem>() {
                     @Override
                     public boolean onItemSingleTapUp(int index, OverlayItem item) {
-                        String title = item.getTitle();
-                        Post post = markerToPost.get(title);
-                        if (post != null) {
-                            showPostDialog(post);
+                        String coordKey = item.getTitle();
+                        List<Post> postsEnUbicacion = markerToPosts.get(coordKey);
+                        if (postsEnUbicacion != null) {
+                            if (postsEnUbicacion.size() == 1) {
+                                showPostDialog(postsEnUbicacion.get(0));
+                            } else {
+                                showMultiplePostsDialog(postsEnUbicacion);
+                            }
                         }
                         return true;
                     }
@@ -156,6 +230,25 @@ public class MapsActivity extends AppCompatActivity {
                 }, mapView.getContext());
 
         mapView.getOverlays().add(itemizedOverlay);
+    }
+
+    private void showMultiplePostsDialog(List<Post> posts) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Publicaciones en esta ubicación (" + posts.size() + ")");
+
+        String[] opciones = new String[posts.size()];
+        for (int i = 0; i < posts.size(); i++) {
+            Post p = posts.get(i);
+            String fecha = new SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()).format(p.getFecha());
+            opciones[i] = p.getUserName() + " - " + fecha + "\n" + p.getTitulo();
+        }
+
+        builder.setItems(opciones, (dialog, which) -> {
+            showPostDialog(posts.get(which));
+        });
+
+        builder.setNegativeButton("Cerrar", null);
+        builder.show();
     }
 
     private void setupMyLocation() {
@@ -176,7 +269,6 @@ public class MapsActivity extends AppCompatActivity {
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 100);
         } else {
             setupMyLocation();
-            loadPostsFromFollowing();
         }
     }
 
@@ -186,51 +278,38 @@ public class MapsActivity extends AppCompatActivity {
         if (requestCode == 100 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             setupMyLocation();
         }
-        loadPostsFromFollowing();
     }
 
     private void loadFollowingList() {
         new LoadFollowingTask().execute();
     }
 
-    private void loadPostsFromFollowing() {
-        new LoadPostsTask().execute();
-    }
-
-    // Método para generar un desplazamiento basado en el índice de publicación en la misma coordenada
-    private GeoPoint getOffsetPosition(double lat, double lon, int offsetIndex) {
-        // Desplazamiento de aproximadamente 0.0005 grados (unos 50 metros)
-        double offsetAmount = 0.0005;
-
-        // Distribuir en círculo alrededor del punto original
-        double angle = offsetIndex * 45; // Ángulo en grados
+    private GeoPoint getOffsetPosition(double lat, double lon, int offsetIndex, int totalEnCoordenada) {
+        double radius = 0.0008;
+        double angle = (360.0 / totalEnCoordenada) * offsetIndex;
         double radians = Math.toRadians(angle);
-        double deltaLat = Math.cos(radians) * offsetAmount;
-        double deltaLon = Math.sin(radians) * offsetAmount;
-
+        double deltaLat = Math.cos(radians) * radius;
+        double deltaLon = Math.sin(radians) * radius;
         return new GeoPoint(lat + deltaLat, lon + deltaLon);
     }
 
-    private void addMarkerToMap(Post post, int sameCoordIndex) {
+    private void addMarkerToMap(Post post, int index, int totalEnUbicacion) {
         if (post == null) return;
 
         if (post.isTieneCoordenadas() && post.getLatitud() != 0 && post.getLongitud() != 0) {
             GeoPoint point;
 
-            if (sameCoordIndex > 0) {
-                // Si hay más publicaciones en la misma coordenada, desplazar este marcador
-                point = getOffsetPosition(post.getLatitud(), post.getLongitud(), sameCoordIndex);
+            if (totalEnUbicacion > 1) {
+                point = getOffsetPosition(post.getLatitud(), post.getLongitud(), index, totalEnUbicacion);
             } else {
                 point = new GeoPoint(post.getLatitud(), post.getLongitud());
             }
 
-            String uniqueTitle = post.getId() + " - " + post.getTitulo();
+            String coordKey = String.format("%.6f,%.6f", post.getLatitud(), post.getLongitud());
+            String uniqueTitle = coordKey + "_" + index;
 
-            // Agregar indicador de que hay múltiples publicaciones en el mismo lugar
-            String description = post.getUserName() + " - " + post.getCategoria();
-            if (sameCoordIndex > 0) {
-                description = "📌 " + description + " (cerca de otra publicación)";
-            }
+            String fecha = new SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()).format(post.getFecha());
+            String description = post.getUserName() + " - " + post.getCategoria() + "\n" + fecha;
 
             OverlayItem overlayItem = new OverlayItem(
                     uniqueTitle,
@@ -239,47 +318,49 @@ public class MapsActivity extends AppCompatActivity {
                     point
             );
 
-            markerToPost.put(uniqueTitle, post);
+            if (!markerToPosts.containsKey(coordKey)) {
+                markerToPosts.put(coordKey, new ArrayList<>());
+            }
 
-            Drawable icon = createMarkerIcon(getMarkerColor(post.getCategoria()));
+            List<Post> postsEnUbicacion = markerToPosts.get(coordKey);
+            boolean yaExiste = false;
+            for (Post p : postsEnUbicacion) {
+                if (p.getId().equals(post.getId())) {
+                    yaExiste = true;
+                    break;
+                }
+            }
+            if (!yaExiste) {
+                postsEnUbicacion.add(post);
+            }
+
+            Drawable icon = createMarkerIcon(getMarkerColor(post.getCategoria()), totalEnUbicacion > 1);
             overlayItem.setMarker(icon);
-
             overlayItems.add(overlayItem);
         }
     }
 
     private void refreshMapMarkers() {
         overlayItems.clear();
-        markerToPost.clear();
-        coordenadaCount.clear();
+        markerToPosts.clear();
 
-        // Primero contar cuántas publicaciones hay en cada coordenada
-        for (Post post : postsConUbicacion) {
+        Map<String, List<Post>> postsPorCoordenada = new HashMap<>();
+
+        for (Post post : publicacionesFiltradas) {
             if (post.isTieneCoordenadas() && post.getLatitud() != 0 && post.getLongitud() != 0) {
                 String coordKey = String.format("%.6f,%.6f", post.getLatitud(), post.getLongitud());
-                int count = coordenadaCount.getOrDefault(coordKey, 0);
-                coordenadaCount.put(coordKey, count + 1);
+                if (!postsPorCoordenada.containsKey(coordKey)) {
+                    postsPorCoordenada.put(coordKey, new ArrayList<>());
+                }
+                postsPorCoordenada.get(coordKey).add(post);
             }
         }
 
-        // Crear un mapa para llevar el conteo por coordenada mientras se agregan
-        Map<String, Integer> currentIndex = new HashMap<>();
-
-        // Agregar marcadores con desplazamiento si hay múltiples
-        for (Post post : postsConUbicacion) {
-            if (post.isTieneCoordenadas() && post.getLatitud() != 0 && post.getLongitud() != 0) {
-                String coordKey = String.format("%.6f,%.6f", post.getLatitud(), post.getLongitud());
-                int totalEnCoordenada = coordenadaCount.getOrDefault(coordKey, 0);
-                int index = currentIndex.getOrDefault(coordKey, 0);
-
-                if (totalEnCoordenada > 1) {
-                    // Múltiples publicaciones en el mismo lugar - mostrar con desplazamiento
-                    addMarkerToMap(post, index);
-                } else {
-                    // Solo una publicación - mostrar en el punto exacto
-                    addMarkerToMap(post, 0);
-                }
-                currentIndex.put(coordKey, index + 1);
+        for (Map.Entry<String, List<Post>> entry : postsPorCoordenada.entrySet()) {
+            List<Post> postsEnCoordenada = entry.getValue();
+            int total = postsEnCoordenada.size();
+            for (int i = 0; i < total; i++) {
+                addMarkerToMap(postsEnCoordenada.get(i), i, total);
             }
         }
 
@@ -288,6 +369,8 @@ public class MapsActivity extends AppCompatActivity {
             itemizedOverlay.addItem(item);
         }
         mapView.invalidate();
+
+        Log.d(TAG, "Marcadores actualizados: " + overlayItems.size());
     }
 
     private int getMarkerColor(String categoria) {
@@ -303,8 +386,8 @@ public class MapsActivity extends AppCompatActivity {
         }
     }
 
-    private Drawable createMarkerIcon(int color) {
-        int size = 80;
+    private Drawable createMarkerIcon(int color, boolean hasMultiple) {
+        int size = hasMultiple ? 72 : 80;
         Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
 
@@ -317,6 +400,14 @@ public class MapsActivity extends AppCompatActivity {
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(3);
         canvas.drawCircle(size / 2, size / 2, size / 2 - 4, paint);
+
+        if (hasMultiple) {
+            paint.setColor(Color.WHITE);
+            paint.setTextSize(size / 3);
+            paint.setTextAlign(Paint.Align.CENTER);
+            paint.setStyle(Paint.Style.FILL);
+            canvas.drawText("📌", size / 2, size / 2 + (size / 6), paint);
+        }
 
         return new android.graphics.drawable.BitmapDrawable(getResources(), bitmap);
     }
@@ -361,13 +452,15 @@ public class MapsActivity extends AppCompatActivity {
         protected Set<String> doInBackground(Void... voids) {
             Set<String> following = new HashSet<>();
             try {
+                following.add(currentUserId);
+
                 String urlStr = Configuracion.SERVIDOR + "/db_seguidores/_design/seguidores/_view/por_seguidor?key=\"" + currentUserId + "\"";
                 URL url = new URL(urlStr);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 setBasicAuth(conn);
                 conn.setRequestMethod("GET");
-                conn.setConnectTimeout(10000);
-                conn.setReadTimeout(10000);
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
 
                 if (conn.getResponseCode() == 200) {
                     InputStream in = conn.getInputStream();
@@ -383,14 +476,14 @@ public class MapsActivity extends AppCompatActivity {
                         for (int i = 0; i < rows.length(); i++) {
                             JSONObject row = rows.getJSONObject(i);
                             String followingId = row.optString("value");
-                            if (!followingId.isEmpty()) {
+                            if (!followingId.isEmpty() && !followingId.equals(currentUserId)) {
                                 following.add(followingId);
                             }
                         }
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "Error en LoadFollowingTask", e);
             }
             return following;
         }
@@ -399,10 +492,15 @@ public class MapsActivity extends AppCompatActivity {
         protected void onPostExecute(Set<String> result) {
             followingIds = result;
             checkPermissionsAndLoad();
+            loadAllPosts();
         }
     }
 
-    private class LoadPostsTask extends AsyncTask<Void, Void, List<Post>> {
+    private void loadAllPosts() {
+        new LoadAllPostsTask().execute();
+    }
+
+    private class LoadAllPostsTask extends AsyncTask<Void, Void, List<Post>> {
         @Override
         protected void onPreExecute() {
             progressBar.setVisibility(View.VISIBLE);
@@ -416,15 +514,17 @@ public class MapsActivity extends AppCompatActivity {
                 return postList;
             }
 
-            try {
-                for (String userId : followingIds) {
-                    String urlStr = Configuracion.SERVIDOR + "/db_publicaciones/_design/publicaciones/_view/por_usuario?key=\"" + userId + "\"";
+            for (String userId : followingIds) {
+                try {
+                    String encodedUserId = URLEncoder.encode("\"" + userId + "\"", "UTF-8");
+                    String urlStr = Configuracion.SERVIDOR + "/db_publicaciones/_design/publicaciones/_view/todas_con_ubicacion?key=" + encodedUserId;
+
                     URL url = new URL(urlStr);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     setBasicAuth(conn);
                     conn.setRequestMethod("GET");
-                    conn.setConnectTimeout(10000);
-                    conn.setReadTimeout(10000);
+                    conn.setConnectTimeout(15000);
+                    conn.setReadTimeout(15000);
 
                     if (conn.getResponseCode() == 200) {
                         InputStream in = conn.getInputStream();
@@ -439,61 +539,19 @@ public class MapsActivity extends AppCompatActivity {
                         if (rows != null) {
                             for (int i = 0; i < rows.length(); i++) {
                                 JSONObject row = rows.getJSONObject(i);
-                                JSONObject doc = row.getJSONObject("value");
-                                String docId = doc.getString("_id");
-                                Post post = Post.fromJSON(doc, docId);
+                                JSONObject doc = row.optJSONObject("value");
 
-                                if (post.isTieneCoordenadas() && post.getLatitud() != 0 && post.getLongitud() != 0) {
+                                if (doc != null) {
+                                    String docId = doc.getString("_id");
+                                    Post post = Post.fromJSON(doc, docId);
                                     postList.add(post);
                                 }
                             }
                         }
                     }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error cargando publicaciones para usuario " + userId, e);
                 }
-
-                String myPostsUrl = Configuracion.SERVIDOR + "/db_publicaciones/_design/publicaciones/_view/por_usuario?key=\"" + currentUserId + "\"";
-                URL myUrl = new URL(myPostsUrl);
-                HttpURLConnection myConn = (HttpURLConnection) myUrl.openConnection();
-                setBasicAuth(myConn);
-                myConn.setRequestMethod("GET");
-                myConn.setConnectTimeout(10000);
-                myConn.setReadTimeout(10000);
-
-                if (myConn.getResponseCode() == 200) {
-                    InputStream in = myConn.getInputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) sb.append(line);
-
-                    JSONObject response = new JSONObject(sb.toString());
-                    JSONArray rows = response.optJSONArray("rows");
-
-                    if (rows != null) {
-                        for (int i = 0; i < rows.length(); i++) {
-                            JSONObject row = rows.getJSONObject(i);
-                            JSONObject doc = row.getJSONObject("value");
-                            String docId = doc.getString("_id");
-                            Post post = Post.fromJSON(doc, docId);
-
-                            if (post.isTieneCoordenadas() && post.getLatitud() != 0 && post.getLongitud() != 0) {
-                                boolean exists = false;
-                                for (Post p : postList) {
-                                    if (p.getId().equals(post.getId())) {
-                                        exists = true;
-                                        break;
-                                    }
-                                }
-                                if (!exists) {
-                                    postList.add(post);
-                                }
-                            }
-                        }
-                    }
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
             }
             return postList;
         }
@@ -503,26 +561,11 @@ public class MapsActivity extends AppCompatActivity {
             progressBar.setVisibility(View.GONE);
 
             if (result != null && !result.isEmpty()) {
-                postsConUbicacion = result;
-                refreshMapMarkers();
-
-                // Contar cuántas coordenadas tienen múltiples publicaciones
-                int duplicated = 0;
-                for (int count : coordenadaCount.values()) {
-                    if (count > 1) duplicated++;
-                }
-
-                if (duplicated > 0) {
-                    Toast.makeText(MapsActivity.this, "📍 " + result.size() + " publicaciones.\n" + duplicated + " ubicaciones tienen múltiples publicaciones (separadas visualmente)", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(MapsActivity.this, "📍 " + result.size() + " publicaciones de usuarios que sigues", Toast.LENGTH_LONG).show();
-                }
+                todasLasPublicaciones = result;
+                aplicarFiltroYActualizarMapa();
+                Toast.makeText(MapsActivity.this, "📍 " + result.size() + " publicaciones cargadas", Toast.LENGTH_LONG).show();
             } else {
-                if (followingIds.isEmpty()) {
-                    Toast.makeText(MapsActivity.this, "⚠️ No sigues a ningún usuario. Sigue a otros usuarios para ver sus publicaciones en el mapa.", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(MapsActivity.this, "⚠️ No hay publicaciones con ubicación de los usuarios que sigues.", Toast.LENGTH_LONG).show();
-                }
+                Toast.makeText(MapsActivity.this, "No hay publicaciones con ubicación", Toast.LENGTH_LONG).show();
             }
         }
     }
