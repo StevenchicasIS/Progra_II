@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -30,7 +31,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import android.graphics.Bitmap;
+
 import org.json.JSONObject;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -55,6 +59,7 @@ public class CreatePostActivity extends AppCompatActivity {
     private String userId, userName, userEmail;
     private List<Uri> imagenesSeleccionadas = new ArrayList<>();
     private List<String> imagenesBase64 = new ArrayList<>();
+    private List<Bitmap> imagenesBitmap = new ArrayList<>(); // Para moderación
     private LocationManager locationManager;
     private LocationListener locationListener;
 
@@ -63,6 +68,10 @@ public class CreatePostActivity extends AppCompatActivity {
     private double longitudActual = 0;
     private boolean tieneCoordenadas = false;
     private boolean obteniendoUbicacion = false;
+
+    // Moderador de contenido
+    private ContentModerator contentModerator;
+
 
     private TextView[] categorias = new TextView[8];
     private int[] categoriaIds = {
@@ -78,6 +87,9 @@ public class CreatePostActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_post);
+
+        // Inicializar moderador de contenido
+        contentModerator = new ContentModerator(this);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -150,7 +162,6 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void obtenerUbicacionActual() {
-        // Verificar permisos
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -159,13 +170,11 @@ public class CreatePostActivity extends AppCompatActivity {
             return;
         }
 
-        // Verificar si GPS está activado
         if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             mostrarDialogoActivarGPS();
             return;
         }
 
-        // Obtener ubicación
         iniciarGPS();
     }
 
@@ -194,7 +203,6 @@ public class CreatePostActivity extends AppCompatActivity {
         txtEstadoGps.setText("🔄 Obteniendo ubicación...");
         txtEstadoGps.setTextColor(getColor(R.color.gray_text));
 
-        // Intentar obtener última ubicación conocida primero
         Location lastLocation = null;
         try {
             lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -205,7 +213,7 @@ public class CreatePostActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        if (lastLocation != null && lastLocation.getAccuracy() < 100) { // Precisión aceptable
+        if (lastLocation != null && lastLocation.getAccuracy() < 100) {
             latitudActual = lastLocation.getLatitude();
             longitudActual = lastLocation.getLongitude();
             tieneCoordenadas = true;
@@ -216,7 +224,6 @@ public class CreatePostActivity extends AppCompatActivity {
             return;
         }
 
-        // Configurar listener para actualizaciones GPS
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(@NonNull Location location) {
@@ -229,7 +236,6 @@ public class CreatePostActivity extends AppCompatActivity {
                     txtEstadoGps.setTextColor(getColor(R.color.green_primary));
                     new ObtenerDireccionTask().execute(latitudActual, longitudActual);
 
-                    // Dejar de escuchar actualizaciones
                     try {
                         locationManager.removeUpdates(locationListener);
                     } catch (SecurityException e) {
@@ -257,16 +263,12 @@ public class CreatePostActivity extends AppCompatActivity {
             public void onStatusChanged(String provider, int status, Bundle extras) {}
         };
 
-        // Solicitar actualizaciones de ubicación
         try {
             locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER,
-                    2000, // 2 segundos
-                    5,    // 5 metros
-                    locationListener
+                    2000, 5, locationListener
             );
 
-            // Timeout después de 15 segundos
             new android.os.Handler().postDelayed(() -> {
                 if (obteniendoUbicacion) {
                     obteniendoUbicacion = false;
@@ -274,7 +276,7 @@ public class CreatePostActivity extends AppCompatActivity {
                         txtEstadoGps.setText("⚠️ No se pudo obtener ubicación");
                         txtEstadoGps.setTextColor(getColor(R.color.red));
                         Toast.makeText(CreatePostActivity.this,
-                                "No se pudo obtener ubicación. Puedes escribirla manualmente o presionar el ícono de ubicación para reintentar.",
+                                "No se pudo obtener ubicación. Puedes escribirla manualmente.",
                                 Toast.LENGTH_LONG).show();
                     }
                     try {
@@ -300,7 +302,7 @@ public class CreatePostActivity extends AppCompatActivity {
                 Toast.makeText(this, "Permiso concedido, obteniendo ubicación...", Toast.LENGTH_SHORT).show();
                 obtenerUbicacionActual();
             } else {
-                Toast.makeText(this, "Permiso de ubicación denegado. Debes escribir la ubicación manualmente.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Permiso de ubicación denegado.", Toast.LENGTH_LONG).show();
                 edtUbicacion.setHint("Escribe tu ubicación manualmente");
                 tieneCoordenadas = false;
             }
@@ -319,11 +321,7 @@ public class CreatePostActivity extends AppCompatActivity {
                 if (addresses != null && !addresses.isEmpty()) {
                     Address address = addresses.get(0);
                     String direccion = "";
-
-                    // Construir dirección legible
-                    if (address.getSubLocality() != null) {
-                        direccion += address.getSubLocality();
-                    }
+                    if (address.getSubLocality() != null) direccion += address.getSubLocality();
                     if (address.getLocality() != null) {
                         if (!direccion.isEmpty()) direccion += ", ";
                         direccion += address.getLocality();
@@ -363,6 +361,11 @@ public class CreatePostActivity extends AppCompatActivity {
                 String base64 = ImageUtils.uriToBase64(this, imagenUri);
                 if (base64 != null) {
                     imagenesBase64.add(base64);
+                    // Convertir a Bitmap para moderación
+                    Bitmap bitmap = ImageUtils.base64ToBitmap(base64);
+                    if (bitmap != null) {
+                        imagenesBitmap.add(bitmap);
+                    }
                 }
                 agregarVistaPrevia(imagenUri);
             } else {
@@ -382,11 +385,14 @@ public class CreatePostActivity extends AppCompatActivity {
         fotosContainer.addView(preview);
     }
 
+    // ==================== MÉTODO PRINCIPAL CON MODERACIÓN ====================
+
     private void publicar() {
         String titulo = edtTitulo.getText().toString().trim();
         String descripcion = edtDescripcion.getText().toString().trim();
         String ubicacion = edtUbicacion.getText().toString().trim();
 
+        // Validaciones básicas
         if (titulo.isEmpty()) {
             edtTitulo.setError("Escribe un título");
             return;
@@ -408,16 +414,79 @@ public class CreatePostActivity extends AppCompatActivity {
             return;
         }
 
-        // Si no tenemos coordenadas, intentar geocodificar la dirección
+        // ========== MODERACIÓN DE TEXTO ==========
+        ContentModerator.ModerationResult titleCheck = contentModerator.analyzeText(titulo);
+        if (!titleCheck.isAppropriate) {
+            mostrarDialogoModeracion(titleCheck.reason);
+            return;
+        }
+
+        ContentModerator.ModerationResult contentCheck = contentModerator.analyzeText(descripcion);
+        if (!contentCheck.isAppropriate) {
+            mostrarDialogoModeracion(contentCheck.reason);
+            return;
+        }
+
+        // ========== MODERACIÓN DE IMÁGENES ==========
+        if (imagenesBitmap != null && !imagenesBitmap.isEmpty()) {
+            progressBar.setVisibility(View.VISIBLE);
+            btnPublicar.setEnabled(false);
+            verificarImagenesSecuencialmente(0, titulo, descripcion, ubicacion);
+        } else {
+            // Sin imágenes, proceder directamente
+            procederConPublicacion(titulo, descripcion, ubicacion);
+        }
+    }
+
+    private void verificarImagenesSecuencialmente(int index, String titulo, String descripcion, String ubicacion) {
+        if (index >= imagenesBitmap.size()) {
+            // Todas las imágenes verificadas
+            procederConPublicacion(titulo, descripcion, ubicacion);
+            return;
+        }
+
+        Bitmap bitmap = imagenesBitmap.get(index);
+        if (bitmap == null) {
+            verificarImagenesSecuencialmente(index + 1, titulo, descripcion, ubicacion);
+            return;
+        }
+
+        contentModerator.analyzeImage(bitmap, new ContentModerator.ModerationCallback() {
+            @Override
+            public void onApproved() {
+                verificarImagenesSecuencialmente(index + 1, titulo, descripcion, ubicacion);
+            }
+
+            @Override
+            public void onRejected(String reason) {
+                progressBar.setVisibility(View.GONE);
+                btnPublicar.setEnabled(true);
+                mostrarDialogoModeracion("Imagen inapropiada: " + reason);
+            }
+        });
+    }
+
+    private void procederConPublicacion(String titulo, String descripcion, String ubicacion) {
         if (!tieneCoordenadas || latitudActual == 0 || longitudActual == 0) {
-            Toast.makeText(this, "Buscando coordenadas de la ubicación...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Buscando coordenadas...", Toast.LENGTH_SHORT).show();
             new GeocodificarDireccionTask().execute(ubicacion, titulo, descripcion);
         } else {
             new CrearPublicacionTask().execute(titulo, descripcion, ubicacion);
         }
     }
 
-    // Tarea para convertir dirección escrita a coordenadas
+    private void mostrarDialogoModeracion(String razon) {
+        new AlertDialog.Builder(this)
+                .setTitle("Contenido no permitido")
+                .setMessage("❌ Tu publicación ha sido detectada como contenido inapropiado.\n\n" +
+                        "Motivo: " + razon + "\n\n" +
+                        "Por favor, respeta las normas de la comunidad para mantener un ambiente seguro.")
+                .setPositiveButton("Entendido", null)
+                .show();
+    }
+
+    // ==================== FIN DE MODERACIÓN ====================
+
     private class GeocodificarDireccionTask extends AsyncTask<String, Void, double[]> {
         private String titulo, descripcion, ubicacion;
 
@@ -457,7 +526,7 @@ public class CreatePostActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 btnPublicar.setEnabled(true);
                 Toast.makeText(CreatePostActivity.this,
-                        "No se encontraron coordenadas para esta ubicación. Sé más específico (ej: San Salvador, Colonia Escalón)",
+                        "No se encontraron coordenadas para esta ubicación.",
                         Toast.LENGTH_LONG).show();
             }
         }
@@ -499,8 +568,6 @@ public class CreatePostActivity extends AppCompatActivity {
                 publicacion.put("likes", 0);
                 publicacion.put("likedBy", new org.json.JSONArray());
                 publicacion.put("comments", new org.json.JSONArray());
-
-                // GUARDAR COORDENADAS (importante para el mapa)
                 publicacion.put("latitud", latitudActual);
                 publicacion.put("longitud", longitudActual);
                 publicacion.put("tieneCoordenadas", tieneCoordenadas && latitudActual != 0);
@@ -542,11 +609,9 @@ public class CreatePostActivity extends AppCompatActivity {
             btnPublicar.setEnabled(true);
 
             if (success) {
-                String mensaje = "¡Publicación creada exitosamente!";
+                String mensaje = "¡Publicación creada exitosamente! ✅";
                 if (tieneCoordenadas && latitudActual != 0) {
                     mensaje += " 📍 Aparecerá en el mapa";
-                } else {
-                    mensaje += " ⚠️ No tiene coordenadas, no aparecerá en el mapa";
                 }
                 Toast.makeText(CreatePostActivity.this, mensaje, Toast.LENGTH_LONG).show();
                 setResult(RESULT_OK);
@@ -566,6 +631,15 @@ public class CreatePostActivity extends AppCompatActivity {
             } catch (SecurityException e) {
                 e.printStackTrace();
             }
+        }
+        // Limpiar bitmaps para liberar memoria
+        if (imagenesBitmap != null) {
+            for (Bitmap bmp : imagenesBitmap) {
+                if (bmp != null && !bmp.isRecycled()) {
+                    bmp.recycle();
+                }
+            }
+            imagenesBitmap.clear();
         }
     }
 }
