@@ -32,6 +32,11 @@ android {
 }
 
 dependencies {
+    // ML Kit para visión (gratuito, on-device)
+    implementation("com.google.mlkit:image-labeling:17.0.7")
+// Para detección de texto ofensivo (TensorFlow Lite)
+    implementation("org.tensorflow:tensorflow-lite-task-text:0.4.0")
+    implementation("com.google.mlkit:image-labeling:17.0.7")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.9.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")

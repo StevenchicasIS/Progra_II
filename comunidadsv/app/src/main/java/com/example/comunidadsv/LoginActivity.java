@@ -104,13 +104,13 @@ public class LoginActivity extends AppCompatActivity {
         private String nombreUsuario = "";
         private String ubicacionUsuario = "";
         private String userId = "";
-        private String userEmail = "";  // Guardar email
+        private String userEmail = "";
 
         @Override
         protected Boolean doInBackground(String... params) {
             String correo = params[0];
             String passwordHash = sha256(params[1]);
-            userEmail = correo;  // Guardar email
+            userEmail = correo;
 
             try {
                 String encodedCorreo = URLEncoder.encode("\"" + correo + "\"", "UTF-8");
@@ -170,7 +170,7 @@ public class LoginActivity extends AppCompatActivity {
                 editor.putString("nombre", nombreUsuario);
                 editor.putString("ubicacion", ubicacionUsuario);
                 editor.putString("userId", userId);
-                editor.putString("email", userEmail);  // Guardar email del usuario
+                editor.putString("email", userEmail);
                 editor.apply();
 
                 Toast.makeText(LoginActivity.this, "¡Bienvenido " + nombreUsuario + "!", Toast.LENGTH_LONG).show();
