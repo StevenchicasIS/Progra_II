@@ -31,7 +31,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import android.graphics.Bitmap;
 
 import org.json.JSONObject;
 
@@ -59,7 +58,7 @@ public class CreatePostActivity extends AppCompatActivity {
     private String userId, userName, userEmail;
     private List<Uri> imagenesSeleccionadas = new ArrayList<>();
     private List<String> imagenesBase64 = new ArrayList<>();
-    private List<Bitmap> imagenesBitmap = new ArrayList<>(); // Para moderación
+    private List<Bitmap> imagenesBitmap = new ArrayList<>();
     private LocationManager locationManager;
     private LocationListener locationListener;
 
@@ -72,6 +71,10 @@ public class CreatePostActivity extends AppCompatActivity {
     // Moderador de contenido
     private ContentModerator contentModerator;
 
+    // Constantes
+    private static final int REQUEST_LOCATION_PERMISSION = 1;
+    private static final int REQUEST_IMAGE_PICK = 2;
+    private static final int REQUEST_IMAGE_CAMERA = 3;
 
     private TextView[] categorias = new TextView[8];
     private int[] categoriaIds = {
@@ -79,9 +82,6 @@ public class CreatePostActivity extends AppCompatActivity {
             R.id.catMascotas, R.id.catEventos, R.id.catAyuda,
             R.id.catObjetos, R.id.catOtros
     };
-
-    private static final int REQUEST_LOCATION_PERMISSION = 1;
-    private static final int REQUEST_IMAGE_PICK = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,9 +141,12 @@ public class CreatePostActivity extends AppCompatActivity {
         ImageView btnAgregarFoto = findViewById(R.id.btnAgregarFoto);
         btnAgregarFoto.setOnClickListener(v -> seleccionarImagen());
 
+        // Botón de cámara
+        ImageView btnTomarFoto = findViewById(R.id.btnTomarFoto);
+        btnTomarFoto.setOnClickListener(v -> tomarFoto());
+
         btnPublicar.setOnClickListener(v -> publicar());
 
-        // OBTENER UBICACIÓN AUTOMÁTICAMENTE AL ABRIR
         obtenerUbicacionActual();
     }
 
@@ -294,9 +297,28 @@ public class CreatePostActivity extends AppCompatActivity {
         }
     }
 
+    // NUEVO: Método para tomar foto con cámara (versión simplificada SIN FileProvider)
+    private void tomarFoto() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA},
+                    REQUEST_IMAGE_CAMERA);
+            return;
+        }
+
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAMERA);
+        } else {
+            Toast.makeText(this, "No se encontró una aplicación de cámara", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         if (requestCode == REQUEST_LOCATION_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "Permiso concedido, obteniendo ubicación...", Toast.LENGTH_SHORT).show();
@@ -305,6 +327,14 @@ public class CreatePostActivity extends AppCompatActivity {
                 Toast.makeText(this, "Permiso de ubicación denegado.", Toast.LENGTH_LONG).show();
                 edtUbicacion.setHint("Escribe tu ubicación manualmente");
                 tieneCoordenadas = false;
+            }
+        }
+
+        if (requestCode == REQUEST_IMAGE_CAMERA) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                tomarFoto();
+            } else {
+                Toast.makeText(this, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -351,25 +381,47 @@ public class CreatePostActivity extends AppCompatActivity {
         startActivityForResult(intent, REQUEST_IMAGE_PICK);
     }
 
+    // Método para procesar imágenes (tanto de galería como de cámara)
+    private void procesarImagen(Uri imagenUri) {
+        if (imagenesSeleccionadas.size() < 4) {
+            imagenesSeleccionadas.add(imagenUri);
+            String base64 = ImageUtils.uriToBase64(this, imagenUri);
+            if (base64 != null) {
+                imagenesBase64.add(base64);
+                Bitmap bitmap = ImageUtils.base64ToBitmap(base64);
+                if (bitmap != null) {
+                    imagenesBitmap.add(bitmap);
+                }
+            }
+            agregarVistaPrevia(imagenUri);
+        } else {
+            Toast.makeText(this, "Máximo 4 fotos", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
+        // Galería
         if (requestCode == REQUEST_IMAGE_PICK && resultCode == RESULT_OK && data != null) {
             Uri imagenUri = data.getData();
-            if (imagenesSeleccionadas.size() < 4) {
-                imagenesSeleccionadas.add(imagenUri);
-                String base64 = ImageUtils.uriToBase64(this, imagenUri);
-                if (base64 != null) {
-                    imagenesBase64.add(base64);
-                    // Convertir a Bitmap para moderación
-                    Bitmap bitmap = ImageUtils.base64ToBitmap(base64);
-                    if (bitmap != null) {
-                        imagenesBitmap.add(bitmap);
-                    }
+            procesarImagen(imagenUri);
+        }
+
+        // Cámara (versión simplificada)
+        if (requestCode == REQUEST_IMAGE_CAMERA && resultCode == RESULT_OK && data != null) {
+            Bundle extras = data.getExtras();
+            Bitmap imageBitmap = (Bitmap) extras.get("data");
+            if (imageBitmap != null) {
+                // Guardar el bitmap temporalmente en el proveedor de medios
+                String path = MediaStore.Images.Media.insertImage(getContentResolver(), imageBitmap, "Foto_" + System.currentTimeMillis(), null);
+                if (path != null) {
+                    Uri imagenUri = Uri.parse(path);
+                    procesarImagen(imagenUri);
+                } else {
+                    Toast.makeText(this, "Error al procesar la foto", Toast.LENGTH_SHORT).show();
                 }
-                agregarVistaPrevia(imagenUri);
-            } else {
-                Toast.makeText(this, "Máximo 4 fotos", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -385,14 +437,11 @@ public class CreatePostActivity extends AppCompatActivity {
         fotosContainer.addView(preview);
     }
 
-    // ==================== MÉTODO PRINCIPAL CON MODERACIÓN ====================
-
     private void publicar() {
         String titulo = edtTitulo.getText().toString().trim();
         String descripcion = edtDescripcion.getText().toString().trim();
         String ubicacion = edtUbicacion.getText().toString().trim();
 
-        // Validaciones básicas
         if (titulo.isEmpty()) {
             edtTitulo.setError("Escribe un título");
             return;
@@ -433,14 +482,12 @@ public class CreatePostActivity extends AppCompatActivity {
             btnPublicar.setEnabled(false);
             verificarImagenesSecuencialmente(0, titulo, descripcion, ubicacion);
         } else {
-            // Sin imágenes, proceder directamente
             procederConPublicacion(titulo, descripcion, ubicacion);
         }
     }
 
     private void verificarImagenesSecuencialmente(int index, String titulo, String descripcion, String ubicacion) {
         if (index >= imagenesBitmap.size()) {
-            // Todas las imágenes verificadas
             procederConPublicacion(titulo, descripcion, ubicacion);
             return;
         }
@@ -480,12 +527,10 @@ public class CreatePostActivity extends AppCompatActivity {
                 .setTitle("Contenido no permitido")
                 .setMessage("❌ Tu publicación ha sido detectada como contenido inapropiado.\n\n" +
                         "Motivo: " + razon + "\n\n" +
-                        "Por favor, respeta las normas de la comunidad para mantener un ambiente seguro.")
+                        "Por favor, respeta las normas de la comunidad.")
                 .setPositiveButton("Entendido", null)
                 .show();
     }
-
-    // ==================== FIN DE MODERACIÓN ====================
 
     private class GeocodificarDireccionTask extends AsyncTask<String, Void, double[]> {
         private String titulo, descripcion, ubicacion;
@@ -632,7 +677,6 @@ public class CreatePostActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-        // Limpiar bitmaps para liberar memoria
         if (imagenesBitmap != null) {
             for (Bitmap bmp : imagenesBitmap) {
                 if (bmp != null && !bmp.isRecycled()) {

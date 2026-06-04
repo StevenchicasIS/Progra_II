@@ -100,7 +100,6 @@
                 android:rowCount="4"
                 android:layout_marginBottom="20dp">
 
-                <!-- Fila 1 -->
                 <TextView
                     android:id="@+id/catTrafico"
                     android:layout_width="0dp"
@@ -127,7 +126,6 @@
                     android:layout_margin="4dp"
                     android:padding="8dp" />
 
-                <!-- Fila 2 -->
                 <TextView
                     android:id="@+id/catEmergencia"
                     android:layout_width="0dp"
@@ -154,7 +152,6 @@
                     android:layout_margin="4dp"
                     android:padding="8dp" />
 
-                <!-- Fila 3 -->
                 <TextView
                     android:id="@+id/catEventos"
                     android:layout_width="0dp"
@@ -181,7 +178,6 @@
                     android:layout_margin="4dp"
                     android:padding="8dp" />
 
-                <!-- Fila 4 -->
                 <TextView
                     android:id="@+id/catObjetos"
                     android:layout_width="0dp"
@@ -210,7 +206,7 @@
 
             </GridLayout>
 
-            <!-- ESTADO DEL GPS - NUEVO TEXTO -->
+            <!-- ESTADO DEL GPS -->
             <TextView
                 android:id="@+id/txtEstadoGps"
                 android:layout_width="match_parent"
@@ -276,11 +272,23 @@
                 android:orientation="horizontal"
                 android:layout_marginBottom="24dp">
 
+                <!-- Botón Galería -->
                 <ImageView
                     android:id="@+id/btnAgregarFoto"
                     android:layout_width="80dp"
                     android:layout_height="80dp"
                     android:src="@drawable/ic_add"
+                    android:background="@drawable/circle_bg"
+                    android:padding="20dp"
+                    android:tint="#0A7A33" />
+
+                <!-- Botón Cámara NUEVO -->
+                <ImageView
+                    android:id="@+id/btnTomarFoto"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:layout_marginStart="12dp"
+                    android:src="@drawable/ic_camera"
                     android:background="@drawable/circle_bg"
                     android:padding="20dp"
                     android:tint="#0A7A33" />
