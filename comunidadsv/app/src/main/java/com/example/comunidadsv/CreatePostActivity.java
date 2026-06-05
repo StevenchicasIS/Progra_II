@@ -31,6 +31,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONObject;
 
@@ -51,7 +53,6 @@ public class CreatePostActivity extends AppCompatActivity {
     private TextView txtContador, txtEstadoGps;
     private Button btnPublicar;
     private ProgressBar progressBar;
-    private LinearLayout fotosContainer;
     private GridLayout gridCategorias;
 
     private String categoriaSeleccionada = "";
@@ -70,6 +71,11 @@ public class CreatePostActivity extends AppCompatActivity {
 
     // Moderador de contenido
     private ContentModerator contentModerator;
+
+    // RecyclerView para fotos
+    private RecyclerView rvFotosPreview;
+    private FotoPreviewAdapter fotoAdapter;
+    private LinearLayout btnAgregarFotoLayout, btnTomarFotoLayout;
 
     // Constantes
     private static final int REQUEST_LOCATION_PERMISSION = 1;
@@ -101,9 +107,26 @@ public class CreatePostActivity extends AppCompatActivity {
         txtContador = findViewById(R.id.txtContador);
         btnPublicar = findViewById(R.id.btnPublicar);
         progressBar = findViewById(R.id.progressBar);
-        fotosContainer = findViewById(R.id.fotosContainer);
         gridCategorias = findViewById(R.id.gridCategorias);
         txtEstadoGps = findViewById(R.id.txtEstadoGps);
+
+        // Inicializar RecyclerView para fotos
+        rvFotosPreview = findViewById(R.id.rvFotosPreview);
+        rvFotosPreview.setLayoutManager(new GridLayoutManager(this, 2));
+
+        fotoAdapter = new FotoPreviewAdapter(position -> {
+            // Eliminar foto
+            if (position < imagenesSeleccionadas.size()) {
+                imagenesSeleccionadas.remove(position);
+                imagenesBase64.remove(position);
+                if (position < imagenesBitmap.size()) {
+                    imagenesBitmap.remove(position);
+                }
+                fotoAdapter.removeFoto(position);
+                Toast.makeText(this, "Foto eliminada", Toast.LENGTH_SHORT).show();
+            }
+        });
+        rvFotosPreview.setAdapter(fotoAdapter);
 
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
@@ -138,12 +161,12 @@ public class CreatePostActivity extends AppCompatActivity {
         ImageView btnMiUbicacion = findViewById(R.id.btnMiUbicacion);
         btnMiUbicacion.setOnClickListener(v -> obtenerUbicacionActual());
 
-        ImageView btnAgregarFoto = findViewById(R.id.btnAgregarFoto);
-        btnAgregarFoto.setOnClickListener(v -> seleccionarImagen());
+        // Botones para agregar fotos (ahora son LinearLayouts)
+        btnAgregarFotoLayout = findViewById(R.id.btnAgregarFoto);
+        btnTomarFotoLayout = findViewById(R.id.btnTomarFoto);
 
-        // Botón de cámara
-        ImageView btnTomarFoto = findViewById(R.id.btnTomarFoto);
-        btnTomarFoto.setOnClickListener(v -> tomarFoto());
+        btnAgregarFotoLayout.setOnClickListener(v -> seleccionarImagen());
+        btnTomarFotoLayout.setOnClickListener(v -> tomarFoto());
 
         btnPublicar.setOnClickListener(v -> publicar());
 
@@ -297,7 +320,6 @@ public class CreatePostActivity extends AppCompatActivity {
         }
     }
 
-    // NUEVO: Método para tomar foto con cámara (versión simplificada SIN FileProvider)
     private void tomarFoto() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -381,10 +403,11 @@ public class CreatePostActivity extends AppCompatActivity {
         startActivityForResult(intent, REQUEST_IMAGE_PICK);
     }
 
-    // Método para procesar imágenes (tanto de galería como de cámara)
     private void procesarImagen(Uri imagenUri) {
         if (imagenesSeleccionadas.size() < 4) {
             imagenesSeleccionadas.add(imagenUri);
+            fotoAdapter.addFoto(imagenUri);
+
             String base64 = ImageUtils.uriToBase64(this, imagenUri);
             if (base64 != null) {
                 imagenesBase64.add(base64);
@@ -393,7 +416,9 @@ public class CreatePostActivity extends AppCompatActivity {
                     imagenesBitmap.add(bitmap);
                 }
             }
-            agregarVistaPrevia(imagenUri);
+
+            // Scroll al final del RecyclerView
+            rvFotosPreview.smoothScrollToPosition(fotoAdapter.getItemCount() - 1);
         } else {
             Toast.makeText(this, "Máximo 4 fotos", Toast.LENGTH_SHORT).show();
         }
@@ -403,18 +428,15 @@ public class CreatePostActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        // Galería
         if (requestCode == REQUEST_IMAGE_PICK && resultCode == RESULT_OK && data != null) {
             Uri imagenUri = data.getData();
             procesarImagen(imagenUri);
         }
 
-        // Cámara (versión simplificada)
         if (requestCode == REQUEST_IMAGE_CAMERA && resultCode == RESULT_OK && data != null) {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
             if (imageBitmap != null) {
-                // Guardar el bitmap temporalmente en el proveedor de medios
                 String path = MediaStore.Images.Media.insertImage(getContentResolver(), imageBitmap, "Foto_" + System.currentTimeMillis(), null);
                 if (path != null) {
                     Uri imagenUri = Uri.parse(path);
@@ -424,17 +446,6 @@ public class CreatePostActivity extends AppCompatActivity {
                 }
             }
         }
-    }
-
-    private void agregarVistaPrevia(Uri uri) {
-        ImageView preview = new ImageView(this);
-        int size = (int) (getResources().getDisplayMetrics().widthPixels * 0.25);
-        preview.setLayoutParams(new LinearLayout.LayoutParams(size, size));
-        preview.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        preview.setPadding(4, 4, 4, 4);
-        preview.setImageURI(uri);
-        preview.setBackgroundResource(R.drawable.edittext_style);
-        fotosContainer.addView(preview);
     }
 
     private void publicar() {
@@ -463,7 +474,6 @@ public class CreatePostActivity extends AppCompatActivity {
             return;
         }
 
-        // ========== MODERACIÓN DE TEXTO ==========
         ContentModerator.ModerationResult titleCheck = contentModerator.analyzeText(titulo);
         if (!titleCheck.isAppropriate) {
             mostrarDialogoModeracion(titleCheck.reason);
@@ -476,7 +486,6 @@ public class CreatePostActivity extends AppCompatActivity {
             return;
         }
 
-        // ========== MODERACIÓN DE IMÁGENES ==========
         if (imagenesBitmap != null && !imagenesBitmap.isEmpty()) {
             progressBar.setVisibility(View.VISIBLE);
             btnPublicar.setEnabled(false);

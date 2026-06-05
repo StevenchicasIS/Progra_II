@@ -255,51 +255,96 @@
 
             </RelativeLayout>
 
-            <!-- Agregar fotos -->
+            <!-- SECCIÓN DE FOTOS - REDISEÑADA -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Agregar fotos"
+                android:text="Fotos"
                 android:textStyle="bold"
                 android:textColor="#333333"
                 android:textSize="14sp"
                 android:layout_marginBottom="12dp" />
 
+            <!-- Botones para agregar fotos (horizontal) -->
             <LinearLayout
-                android:id="@+id/layoutFotos"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="24dp">
-
-                <!-- Botón Galería -->
-                <ImageView
-                    android:id="@+id/btnAgregarFoto"
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:src="@drawable/ic_add"
-                    android:background="@drawable/circle_bg"
-                    android:padding="20dp"
-                    android:tint="#0A7A33" />
-
-                <!-- Botón Cámara NUEVO -->
-                <ImageView
-                    android:id="@+id/btnTomarFoto"
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:layout_marginStart="12dp"
-                    android:src="@drawable/ic_camera"
-                    android:background="@drawable/circle_bg"
-                    android:padding="20dp"
-                    android:tint="#0A7A33" />
+                android:layout_marginBottom="16dp">
 
                 <LinearLayout
-                    android:id="@+id/fotosContainer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal" />
+                    android:id="@+id/btnAgregarFoto"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/button_outline_style"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_add"
+                        android:tint="#0A7A33" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Galería"
+                        android:textSize="12sp"
+                        android:textColor="#0A7A33"
+                        android:layout_marginTop="8dp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btnTomarFoto"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/button_outline_style"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_camera"
+                        android:tint="#0A7A33" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cámara"
+                        android:textSize="12sp"
+                        android:textColor="#0A7A33"
+                        android:layout_marginTop="8dp" />
+
+                </LinearLayout>
 
             </LinearLayout>
+
+            <!-- Área de vista previa de fotos (grid de 2 columnas) -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Vista previa"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="8dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvFotosPreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:layout_marginBottom="16dp" />
 
             <!-- Botón Publicar -->
             <Button
